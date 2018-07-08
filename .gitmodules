@@ -1,0 +1,3 @@
+[submodule "Plugins/SimplexNoise"]
+	path = Plugins/SimplexNoise
+	url = https://github.com/Jack-Myth/SimplexNoise.git
