@@ -176,8 +176,16 @@ TArray<FBlockInfo> ACircleOnlyMapGenerator::HitBlock_Internal(FVector mBlockLoca
 		float tmpHealth = GetBlockHealth(mBlockLocation);
 		if (tmpHealth == -1)
 		{
-			SetBlockHealth(mBlockLocation, 100 - Damage);
-			curBlockInfo.Value = 100 - Damage;
+			if (Damage >= 100)
+			{
+				curBlockInfo.Value = -1;
+				BreakBlock_Internal(mBlockLocation);
+			}
+			else
+			{
+				SetBlockHealth(mBlockLocation, 100 - Damage);
+				curBlockInfo.Value = 100 - Damage;
+			}
 		}
 		else
 		{
@@ -271,7 +279,6 @@ TArray<FBlockInfo> ACircleOnlyMapGenerator::BreakBlock_Internal(FVector mBlockLo
 ACircleOnlyMapGenerator::ACircleOnlyMapGenerator()
 {
 	RootComponent= CreateDefaultSubobject<USceneComponent>("RootComponent");
-	bAlwaysRelevant = true;
 	SetReplicates(true);
 }
 
@@ -285,10 +292,6 @@ void ACircleOnlyMapGenerator::GenMapBlockInstance_Implementation(UObject* WorldC
 	MapHolder = WorldContextObj->GetWorld()->SpawnActor<AActor>(FVector(0, 0, 0), FRotator(0, 0, 0));
 	MapBlockInstance = NewObject<UInstancedStaticMeshComponent>();
 	MapBlockInstance->RegisterComponentWithWorld(WorldContextObj->GetWorld());
-	// Enable Replication
-	//MapHolder->SetReplicates(true);
-	//MapBlockInstance->SetIsReplicated(true);
-	//MapBlockInstance = (UInstancedStaticMeshComponent*)MapHolder->AddComponent("MapBlock", false, FTransform::Identity, GetMutableDefault<UInstancedStaticMeshComponent>());
 	MapBlockInstance->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/FireBall/Meshs/SimpleBox.SimpleBox'")));
 	UMaterial* tmpMat = LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/FireBall/Materials/BlockScaleMat.BlockScaleMat'"));
 	MaxXYZ = FVector(MaxEngth, MaxWidth, MaxHeight);
@@ -313,9 +316,10 @@ void ACircleOnlyMapGenerator::GenMapBlockInstance_Implementation(UObject* WorldC
 		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "Error:NULL Root Component From MapHolder!");
 		return;
 	}
-	MapBlockInstance->MarkRenderStateDirty();
-	MapHolder->bNetLoadOnClient = true;
-	MapHolder->SetReplicates(true);
+	// InstacedStaticMeshComponent Doesn't Support Replication
+	// Disable Replicate otherwise many warning will generate.
+	MapHolder->SetReplicates(false);
+	MapHolder->bNetLoadOnClient = false;
 	
 	// Test Only
 	/*UStaticMeshComponent* StaticMeshC = NewObject<UStaticMeshComponent>();

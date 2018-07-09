@@ -21,6 +21,7 @@ void AXBallGameModeBase::BeginPlay()
 
 void AXBallGameModeBase::Tick(float DeltaSeconds)
 {
+	Super::Tick(DeltaSeconds);
 	for (auto it=PlayerRespawnQueue.CreateIterator();it;++it)
 	{
 		it->TimeRemain -= DeltaSeconds;
@@ -69,18 +70,15 @@ void AXBallGameModeBase::PrepareReSpawn(AXBallPlayerControllerBase* TargetContro
 	}
 }
 
-void AXBallGameModeBase::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
-{
+/*APawn* AXBallGameModeBase::SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer, const FTransform& SpawnTransform)
+{	
+	return Super::SpawnDefaultPawnAtTransform_Implementation(NewPlayer, SpawnTransform);
 	AXBallPlayerControllerBase* NewXBallPlayer = Cast<AXBallPlayerControllerBase>(NewPlayer);
 	if (!NewXBallPlayer)
 	{
-		Super::HandleStartingNewPlayer(NewPlayer);
-		return;
+		return Super::SpawnDefaultPawnAtTransform_Implementation(NewPlayer, SpawnTransform);
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Cyan, FString("Character Pawn Class:") + NewXBallPlayer->GetPlayerDefaultCharacter()->GetFullName());
-	APawn* tmpPawn = Cast<APawn>(GetWorld()->SpawnActor(NewXBallPlayer->GetPlayerDefaultCharacter()));
-	if (tmpPawn)
-	{
-		NewXBallPlayer->Possess(tmpPawn);
-	}
+	return Cast<APawn>(GetWorld()->SpawnActor(NewXBallPlayer->GetPlayerDefaultCharacter(), &SpawnTransform));
 }
+*/

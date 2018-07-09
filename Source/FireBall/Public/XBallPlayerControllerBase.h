@@ -24,7 +24,7 @@ protected:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 		UClass* PlayerDefaultCharacter;
 	//BeginPlay()
-public:
+public:	
 	AXBallPlayerControllerBase();
 
 	UFUNCTION(BlueprintCallable,NetMulticast,Reliable,WithValidation)

@@ -62,9 +62,10 @@ AXBallBase::AXBallBase()
 	//Yaw has been setted Defaultly;
 	// Setup Camera
 	CameraArm = CreateDefaultSubobject<USpringArmComponent>("CameraArm");
+	CameraArm->SetAbsolute(false, true);
 	CameraArm->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 	CameraArm->SetRelativeLocation(FVector(0.f));
-	CameraArm->SetRelativeRotation(FRotator(-50.f, 0.f,0));
+	CameraArm->SetWorldRotation(FRotator(-50.f, 0.f, 0));
 	CameraArm->TargetArmLength = 600;
 	PlayerCamera = CreateDefaultSubobject<UCameraComponent>("PlayerCamera");
 	PlayerCamera->AttachToComponent(CameraArm, FAttachmentTransformRules::KeepRelativeTransform);
@@ -103,6 +104,7 @@ void AXBallBase::UpdatePlayerTarget()
 		return;
 	if(::IsValid(PlayerTarget))
 		IScenePlayerTarget::Execute_NotifyDestruction(PlayerTarget);
+	//CameraArm->SetWorldRotation(FRotator(-50, 0, 0));
 	PlayerTarget = NewTarget;
 	FVector SurfaceNormal;
 	FVector CursorPos = GetCursorLocation(&SurfaceNormal);
@@ -171,7 +173,18 @@ void AXBallBase::BeginPlay()
 
 void AXBallBase::UpdateRotation_Implementation(FVector TargetLocation)
 {
-	FRotator TargetRotation= UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TargetLocation);
+	UpdateRotation_Internal(TargetLocation);
+}
+
+
+bool AXBallBase::UpdateRotation_Validate(FVector TargetLocation)
+{
+	return true;
+}
+
+void AXBallBase::UpdateRotation_Internal(FVector TargetLocation)
+{
+	FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TargetLocation);
 	AController* mController = GetController();
 	if (mController&&mController->IsLocalController())
 	{
@@ -201,18 +214,19 @@ void AXBallBase::Input_MouseX(float AxisValue)
 {
 	FVector SurfaceNormal;
 	FVector TargetLocation = GetCursorLocation(&SurfaceNormal);
-	if(PlayerTarget)
-		IScenePlayerTarget::Execute_OnUpdateTargetPosition(PlayerTarget,TargetLocation,SurfaceNormal);
+	if (TargetLocation == TargetLocationCache)
+		return;
+	TargetLocationCache = TargetLocation;
+	if (PlayerTarget)
+		IScenePlayerTarget::Execute_OnUpdateTargetPosition(PlayerTarget, TargetLocation, SurfaceNormal);
 	UpdateRotation(TargetLocation);
+	UpdateRotation_Internal(TargetLocation);
+	if (!IsLocallyControlled())
+		UpdateRotation(TargetLocation);
 }
 
 void AXBallBase::Input_MouseY(float AxisValue)
 {
-	FVector SurfaceNormal;
-	FVector TargetLocation = GetCursorLocation(&SurfaceNormal);
-	if(PlayerTarget)
-		IScenePlayerTarget::Execute_OnUpdateTargetPosition(PlayerTarget,TargetLocation,SurfaceNormal);
-	UpdateRotation(TargetLocation);
 }
 
 void AXBallBase::Input_JumpStart()
@@ -417,7 +431,8 @@ bool AXBallBase::EndSelectAction_Validate(int ActionIndex, FVector TargetLocatio
 void AXBallBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	CameraArm->SetWorldRotation(FRotator(-50, 0, 0));
+	
+	//CameraArm->SetWorldRotation(FRotator(-50, 0, 0));
 }
 
 // Called to bind functionality to input
@@ -467,4 +482,3 @@ bool AXBallBase::InitPlayer_Validate(int Team)
 {
 	return true;
 }
-

@@ -14,17 +14,19 @@ class FIREBALL_API AXBallBase : public ACharacter
 {
 	GENERATED_BODY()
 
-
-	class AWeaponBase* CurrentWeapon = nullptr;
-	class ASkillBase* CurrentSkill = nullptr;
+	UPROPERTY()
+		class AWeaponBase* CurrentWeapon = nullptr;
+	UPROPERTY()
+		class ASkillBase* CurrentSkill = nullptr;
 	//class USceneComponent* SkillSocket=nullptr, *WeaponSocket = nullptr;
 	UStaticMeshComponent* CoreBallMesh=nullptr;
 	class UCameraComponent* PlayerCamera = nullptr;
 	int Health;
 	UObject* PlayerTarget=nullptr;
 	FVector GetCursorLocation(FVector* outSurfaceNormal=nullptr);
+	FVector TargetLocationCache;
 public:
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite,EditAnywhere)
 		class USpringArmComponent* CameraArm = nullptr;
 	// Sets default values for this character's properties
 	AXBallBase();
@@ -71,8 +73,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Server, Reliable, WithValidation)
 		void EndFireWeapon(FVector TargetLocation);
 
-	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
+	UFUNCTION(BlueprintCallable, Server, Unreliable,WithValidation)
 		void UpdateRotation(FVector TargetLocation);
+
+	void UpdateRotation_Internal(FVector TargetLocation);
 
 	UFUNCTION()
 		void Input_MoveForward(float AxisValue);
