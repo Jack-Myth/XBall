@@ -21,7 +21,7 @@ class FIREBALL_API AXBallBase : public ACharacter
 	//class USceneComponent* SkillSocket=nullptr, *WeaponSocket = nullptr;
 	UStaticMeshComponent* CoreBallMesh=nullptr;
 	class UCameraComponent* PlayerCamera = nullptr;
-	int Health;
+	int Health=100;
 	UObject* PlayerTarget=nullptr;
 	FVector GetCursorLocation(FVector* outSurfaceNormal=nullptr);
 	FVector TargetLocationCache;
@@ -45,6 +45,9 @@ public:
 
 protected:
 
+	UMaterialInstanceDynamic * DamagedEffect;
+	float DamageBlendAlpha = 0.f;
+
 	//Check If Player Should Die
 	UFUNCTION(BlueprintNativeEvent)
 	void CheckShouldDie();//On Server
@@ -62,22 +65,49 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UFUNCTION(BlueprintCallable,Client,Unreliable)
+		void ShowScreenEffectDamaged_Rep(int Damage, const AController* Instigater, const class AActor* DamageCauser, const class UDamageType* DamageType);
+
+	// Show Screen Effect When Take Damage
+	// May be overrided By child Class
+	// Called By ShowScreenEffectDamaged_Rep
+	UFUNCTION(BlueprintNativeEvent)
+		void ShowScreenEffectDamaged(int Damage, const AController* Instigater, const class AActor* DamageCauser, const class UDamageType* DamageType);
+
+	// Call while Press an Action
 	UFUNCTION(BlueprintCallable, Server,Reliable,WithValidation)
 		void BeginSelectAction(int ActionIndex,FVector TargetLocation);
 
+	// Call while release an Action
 	UFUNCTION(BlueprintCallable, Server, Reliable, WithValidation)
 		void EndSelectAction(int ActionIndex, FVector TargetLocation);
+
+	// Call while Press Fire Button
 	UFUNCTION(BlueprintCallable, Server, Reliable, WithValidation)
 		void BeginFireWeapon(FVector TargetLocation);
 
+	// Call while release fire button
 	UFUNCTION(BlueprintCallable, Server, Reliable, WithValidation)
 		void EndFireWeapon(FVector TargetLocation);
 
+	// Update Player Character On Server.
 	UFUNCTION(BlueprintCallable, Server, Unreliable,WithValidation)
 		void UpdateRotation(FVector TargetLocation);
 
+	// Update Rotation Locally
+	// Called By UpdateRotation while Execute on server.
+	// Client May also call this function to update rotation locally.
 	void UpdateRotation_Internal(FVector TargetLocation);
+	
+	// Default Processor while take any damage.
+	// It will decrease the health and call CheckSouldDie()
+	// then It will call ShowScreenEffectDamage() to show screen effect.
+	UFUNCTION()
+		void AnyDamage_Internal(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
+	//UFUNCTION()
+
+	// Input Handler================================================
 	UFUNCTION()
 		void Input_MoveForward(float AxisValue);
 	UFUNCTION()
@@ -127,6 +157,8 @@ protected:
 	UFUNCTION()
 		void Input_EndAction7();
 
+	//End Input Handler==================================
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -134,9 +166,8 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	// Currently Useless befause It doesn't have Team System.
 	UFUNCTION(BlueprintCallable, NetMulticast, Reliable, WithValidation)
 		void InitPlayer(int Team);
-
-
 
 };

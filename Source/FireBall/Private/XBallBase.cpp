@@ -15,6 +15,9 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Engine/World.h"
 #include "XBallPlayerControllerBase.h"
+#include "Kismet/KismetMaterialLibrary.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "TimerManager.h"
 
 
 FVector AXBallBase::GetCursorLocation(FVector* outSurfaceNormal) 
@@ -80,6 +83,8 @@ AXBallBase::AXBallBase()
 	JumpMaxCount = 2;
 	GetCharacterMovement()->AirControl = 0.7f;
 	
+	// Setup Take Any Damage Delegate
+	OnTakeAnyDamage.AddDynamic(this, &AXBallBase::AnyDamage_Internal);
 }
 
 void AXBallBase::UpdatePlayerTarget()
@@ -166,9 +171,39 @@ void AXBallBase::DieDefault_Implementation()
 void AXBallBase::BeginPlay()
 {
 	Super::BeginPlay();
+	//Setup Camera Effect
+	DamagedEffect = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/FireBall/Materials/DamageEffect.DamageEffect'")));
+	PlayerCamera->AddOrUpdateBlendable(DamagedEffect);
 
 	// Setup Cursor£¨Player Target£©
 	UpdatePlayerTarget();
+}
+
+void AXBallBase::ShowScreenEffectDamaged_Rep_Implementation(int Damage, const AController* Instigater, const class AActor* DamageCauser, const class UDamageType* DamageType)
+{
+	ShowScreenEffectDamaged(Damage, Instigater, DamageCauser, DamageType);
+}
+
+void AXBallBase::ShowScreenEffectDamaged_Implementation(int Damage, const AController* Instigater, const class AActor* DamageCauser, const class UDamageType* DamageType)
+{
+	FTimerHandle tmpTimerHandle;
+	if (DamageBlendAlpha<=0)
+	{
+		DamageBlendAlpha += 0.3f;
+		GetWorld()->GetTimerManager().SetTimer(tmpTimerHandle,[tmpTimerHandle,this]()
+			{
+				if (DamageBlendAlpha <= 0||this->IsPendingKill())
+				{
+					DamageBlendAlpha = 0;
+					FTimerHandle tmpTimerHandlex = tmpTimerHandle;
+					GetWorld()->GetTimerManager().ClearTimer(tmpTimerHandlex);
+				}
+				DamagedEffect->SetScalarParameterValue("Alpha", DamageBlendAlpha);
+				DamageBlendAlpha -= 0.02;
+			},0.02f,true,-1.f);
+	}
+	else
+		DamageBlendAlpha += 0.3f;
 }
 
 void AXBallBase::UpdateRotation_Implementation(FVector TargetLocation)
@@ -198,6 +233,14 @@ void AXBallBase::UpdateRotation_Internal(FVector TargetLocation)
 	{
 		CurrentSkill->UpdateTargetLocation(TargetLocation);
 	}
+}
+
+void AXBallBase::AnyDamage_Internal(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
+{
+	UE_LOG(LogTemp, Display, TEXT("Pawn Has been Damaged"));
+	Health -= Damage;
+	ShowScreenEffectDamaged_Rep((int)Damage, InstigatedBy, DamageCauser, DamageType);
+	CheckShouldDie();
 }
 
 void AXBallBase::Input_MoveForward(float AxisValue)

@@ -70,6 +70,18 @@ void AXBallGameModeBase::PrepareReSpawn(AXBallPlayerControllerBase* TargetContro
 	}
 }
 
+void AXBallGameModeBase::RestartPlayerAtTransform(AController* NewPlayer, const FTransform& SpawnTransform)
+{
+	TArray<AActor*> ActorsCollection;
+	FTransform tmpTransform = SpawnTransform;
+	TArray<TEnumAsByte<EObjectTypeQuery>> tmpx;
+	while (UKismetSystemLibrary::SphereOverlapActors(this, tmpTransform.GetLocation(), 100.f, tmpx, AActor::StaticClass(), TArray<AActor*>(), ActorsCollection))
+	{
+		tmpTransform.SetLocation(FVector(FMath::RandRange(-500, 500), FMath::RandRange(-500, 500), FMath::RandRange(-500, 500)));
+	}
+	Super::RestartPlayerAtTransform(NewPlayer, tmpTransform);
+}
+
 /*APawn* AXBallGameModeBase::SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer, const FTransform& SpawnTransform)
 {	
 	return Super::SpawnDefaultPawnAtTransform_Implementation(NewPlayer, SpawnTransform);
