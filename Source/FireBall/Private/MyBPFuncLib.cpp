@@ -23,14 +23,17 @@ void UMyBPFuncLib::GenWorld(UObject* WorldContextObj, int Ength, int Width, int 
 		return;
 	IMapGenerator::Execute_GenMapBlockInstance(CoreMapGenerators[0], WorldContextObj, Ength, Width, Height,Seed);
 	FTimerHandle InitAnimationTimeHandle;
-	UMaterialInstanceDynamic* BlockDMI = IMapGenerator::Execute_GetDMI(CoreMapGenerators[0]);
+	TArray<UMaterialInstanceDynamic*> BlockDMIs = IMapGenerator::Execute_GetDMIs(CoreMapGenerators[0]);
 	UMaterialParameterCollection* MPC = LoadObject<UMaterialParameterCollection>(nullptr, TEXT("MaterialParameterCollection'/Game/FireBall/Materials/MatData.MatData'"));
 	UKismetMaterialLibrary::SetScalarParameterValue(WorldContextObj, MPC, "CubeSize", 50);
 	UKismetMaterialLibrary::SetVectorParameterValue(WorldContextObj, MPC, "ScaleOrigin", FLinearColor(FVector(0,0,0)));
 	WorldContextObj->GetWorld()->GetTimerManager().SetTimer(InitAnimationTimeHandle, [=]()
 		{
-			int x = BlockDMI->K2_GetScalarParameterValue("ScaleRange")+30;
-			BlockDMI->SetScalarParameterValue("ScaleRange", x);
+			int x = BlockDMIs[0]->K2_GetScalarParameterValue("ScaleRange") + 30;
+			for (int i = 0; i < BlockDMIs.Num(); i++)
+			{
+				BlockDMIs[i]->SetScalarParameterValue("ScaleRange", x);
+			}
 			if (x > 655360)
 			{
 				FTimerHandle tmpTimerHandle = InitAnimationTimeHandle;

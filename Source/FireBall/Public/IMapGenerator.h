@@ -59,7 +59,7 @@ public:
 		void HitBlockRange(FVector Center, FVector RangeXYZ,float MaxDamage);
 
 	UFUNCTION(BlueprintNativeEvent)
-		class UMaterialInstanceDynamic* GetDMI();
+		TArray<class UMaterialInstanceDynamic*> GetDMIs();
 
 	UFUNCTION(BlueprintNativeEvent)
 		void SyncMap(const TArray<FBlockInfo>& BlockModifiedInfo);

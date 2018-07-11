@@ -22,7 +22,8 @@ class FIREBALL_API ACircleOnlyMapGenerator:public AActor,public IMapGenerator
 	float GetBlockHealth(FVector BlockLocation);
 	FVector TransformWorldToBlock(FVector WorldLocation);
 	FVector TransformWorldToBlockWithNormal(FVector WorldLocation, FVector SurfaceNormal);
-
+	int GetBlockType(FVector mBlockLocation);
+	class UInstancedStaticMeshComponent* GetMapBlockInstance(FVector mBlockLocation);
 	TMap<int, TMap<int, TMap<int, int>>> MapVariation;  //X(Y(Z))
 	TMap<int, TMap<int, TMap<int, float>>> MapBlockHealth;
 	int* BlockIndexOnLocation(FVector LocationInBlockCoord);
@@ -33,13 +34,10 @@ class FIREBALL_API ACircleOnlyMapGenerator:public AActor,public IMapGenerator
 	FVector MaxXYZ;
 public:
 	UPROPERTY(BlueprintReadOnly)
-		class UInstancedStaticMeshComponent* MapBlockInstance = nullptr;
+		TArray<class UInstancedStaticMeshComponent*> MapBlockInstances;
 
 	UPROPERTY(BlueprintReadOnly)
-		AActor* MapHolder=nullptr;
-
-	UPROPERTY(BlueprintReadOnly)
-		class UMaterialInstanceDynamic* BlockDMI = nullptr;
+		TArray<class UMaterialInstanceDynamic*> BlockDMIs;
 
 	ACircleOnlyMapGenerator();
 	~ACircleOnlyMapGenerator();
@@ -65,7 +63,7 @@ public:
 		virtual void HitBlockRange_Implementation(FVector Center, FVector RangeXYZ, float MaxDamage) override;
 
 	UFUNCTION(BlueprintCallable)
-		virtual class UMaterialInstanceDynamic* GetDMI_Implementation() override;
+		virtual TArray<class UMaterialInstanceDynamic*> GetDMIs_Implementation() override;
 
 	UFUNCTION(BlueprintCallable)
 		virtual void SyncMap_Implementation(const TArray<FBlockInfo>& BlockModifiedInfo) override;

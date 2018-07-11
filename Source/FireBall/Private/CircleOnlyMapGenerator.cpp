@@ -130,6 +130,17 @@ FVector ACircleOnlyMapGenerator::TransformWorldToBlockWithNormal(FVector WorldLo
 	return tmpLocation;
 }
 
+int ACircleOnlyMapGenerator::GetBlockType(FVector mBlockLocation)
+{
+	int tmpIndex = (int)(USimplexNoiseBPLibrary::SimplexNoise3D(mBlockLocation.X / 20.f, mBlockLocation.Y / 20.f, mBlockLocation.Z / 10.f) * 10);
+	return tmpIndex < 5 || tmpIndex>9 ? 5: tmpIndex - 5;
+}
+
+class UInstancedStaticMeshComponent* ACircleOnlyMapGenerator::GetMapBlockInstance(FVector mBlockLocation)
+{
+	return MapBlockInstances[GetBlockType(mBlockLocation)];
+}
+
 int* ACircleOnlyMapGenerator::BlockIndexOnLocation(FVector LocationInBlockCoord)
 {
 	void* tmpP;
@@ -177,33 +188,26 @@ TArray<FBlockInfo> ACircleOnlyMapGenerator::HitBlock_Internal(FVector mBlockLoca
 		if (tmpHealth == -1)
 		{
 			// For different Block type, Give Different MaxHealth
-			int MaxHealth=100;
-			if (abs(mBlockLocation.X) > MaxXYZ.X - 1 ||
-				abs(mBlockLocation.Y) > MaxXYZ.Y - 1 ||
-				abs(mBlockLocation.Z) > MaxXYZ.Z - 1)
+			int MaxHealth = 100;
+			switch (GetBlockType(mBlockLocation))
 			{
-				MaxHealth = 700;
-			}
-			else
-			{
-				switch ((int)(USimplexNoiseBPLibrary::SimplexNoise3D(mBlockLocation.X, mBlockLocation.Y, mBlockLocation.Z) * 10))
-				{
-					case 5:
-						MaxHealth = 100;
-						break;
-					case 6:
-						MaxHealth = 200;
-						break;
-					case 7:
-						MaxHealth = 300;
-						break;
-					case 8:
-						MaxHealth = 400;
-						break;
-					case 9:
-						MaxHealth = 500;
-						break;
-				}
+				case 0:
+					MaxHealth = 100;
+					break;
+				case 1:
+					MaxHealth = 200;
+					break;
+				case 2:
+					MaxHealth = 300;
+					break;
+				case 3:
+					MaxHealth = 400;
+					break;
+				case 4:
+					MaxHealth = 500;
+					break;
+				case 5:
+					MaxHealth = 700;
 			}
 			if (Damage >= MaxHealth)
 			{
@@ -276,29 +280,30 @@ TArray<FBlockInfo> ACircleOnlyMapGenerator::BreakBlock_Internal(FVector mBlockLo
 	{
 		//MapBlockInstance->RemoveInstance(*(int*)tmpP);
 		FTransform BlockOriginTransform;
-		MapBlockInstance->GetInstanceTransform(*tmpP, BlockOriginTransform, true);
+		UInstancedStaticMeshComponent* BlockInstance= GetMapBlockInstance(mBlockLocation);
+		BlockInstance->GetInstanceTransform(*tmpP, BlockOriginTransform, true);
 		BlockOriginTransform.SetScale3D(FVector(0.0f));
-		MapBlockInstance->UpdateInstanceTransform(*tmpP, BlockOriginTransform, true, true);
+		BlockInstance->UpdateInstanceTransform(*tmpP, BlockOriginTransform, true, true);
 		RemoveBlockHealth(mBlockLocation);
 		*tmpP = -1;
 		if (!BlockIndexExist(mBlockLocation + FVector(1, 0, 0)) && LocationShouldHaveBlock(mBlockLocation + FVector(1, 0, 0), MaxXYZ))
 			MapVariation.FindOrAdd(mBlockLocation.X + 1).FindOrAdd(mBlockLocation.Y).FindOrAdd(mBlockLocation.Z) =
-			MapBlockInstance->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(mBlockLocation.X + 1, mBlockLocation.Y, mBlockLocation.Z) * 100, FVector(1.f, 1.f, 1.f)));
+			GetMapBlockInstance(mBlockLocation + FVector(1, 0, 0))->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(mBlockLocation.X + 1, mBlockLocation.Y, mBlockLocation.Z) * 100, FVector(1.f, 1.f, 1.f)));
 		if (!BlockIndexExist(mBlockLocation + FVector(-1, 0, 0)) && LocationShouldHaveBlock(mBlockLocation + FVector(-1, 0, 0), MaxXYZ))
 			MapVariation.FindOrAdd(mBlockLocation.X - 1).FindOrAdd(mBlockLocation.Y).FindOrAdd(mBlockLocation.Z) =
-			MapBlockInstance->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(mBlockLocation.X - 1, mBlockLocation.Y, mBlockLocation.Z) * 100, FVector(1.f, 1.f, 1.f)));
+			GetMapBlockInstance(mBlockLocation + FVector(-1, 0, 0))->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(mBlockLocation.X - 1, mBlockLocation.Y, mBlockLocation.Z) * 100, FVector(1.f, 1.f, 1.f)));
 		if (!BlockIndexExist(mBlockLocation + FVector(0, 1, 0)) && LocationShouldHaveBlock(mBlockLocation + FVector(0, 1, 0), MaxXYZ))
 			MapVariation.FindOrAdd(mBlockLocation.X).FindOrAdd(mBlockLocation.Y + 1).FindOrAdd(mBlockLocation.Z) =
-			MapBlockInstance->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(mBlockLocation.X, mBlockLocation.Y + 1, mBlockLocation.Z) * 100, FVector(1.f, 1.f, 1.f)));
+			GetMapBlockInstance(mBlockLocation + FVector(0, 1, 0))->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(mBlockLocation.X, mBlockLocation.Y + 1, mBlockLocation.Z) * 100, FVector(1.f, 1.f, 1.f)));
 		if (!BlockIndexExist(mBlockLocation + FVector(0, -1, 0)) && LocationShouldHaveBlock(mBlockLocation + FVector(0, -1, 0), MaxXYZ))
 			MapVariation.FindOrAdd(mBlockLocation.X).FindOrAdd(mBlockLocation.Y - 1).FindOrAdd(mBlockLocation.Z) =
-			MapBlockInstance->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(mBlockLocation.X, mBlockLocation.Y - 1, mBlockLocation.Z) * 100, FVector(1.f, 1.f, 1.f)));
+			GetMapBlockInstance(mBlockLocation + FVector(0, -1, 0))->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(mBlockLocation.X, mBlockLocation.Y - 1, mBlockLocation.Z) * 100, FVector(1.f, 1.f, 1.f)));
 		if (!BlockIndexExist(mBlockLocation + FVector(0, 0, 1)) && LocationShouldHaveBlock(mBlockLocation + FVector(0, 0, 1), MaxXYZ))
 			MapVariation.FindOrAdd(mBlockLocation.X).FindOrAdd(mBlockLocation.Y).FindOrAdd(mBlockLocation.Z + 1) =
-			MapBlockInstance->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(mBlockLocation.X, mBlockLocation.Y, mBlockLocation.Z + 1) * 100, FVector(1.f, 1.f, 1.f)));
+			GetMapBlockInstance(mBlockLocation + FVector(0, 0, 1))->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(mBlockLocation.X, mBlockLocation.Y, mBlockLocation.Z + 1) * 100, FVector(1.f, 1.f, 1.f)));
 		if (!BlockIndexExist(mBlockLocation + FVector(0, 0, -1)) && LocationShouldHaveBlock(mBlockLocation + FVector(0, 0, -1), MaxXYZ))
 			MapVariation.FindOrAdd(mBlockLocation.X).FindOrAdd(mBlockLocation.Y).FindOrAdd(mBlockLocation.Z - 1) =
-			MapBlockInstance->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(mBlockLocation.X, mBlockLocation.Y, mBlockLocation.Z - 1) * 100, FVector(1.f, 1.f, 1.f)));
+			GetMapBlockInstance(mBlockLocation + FVector(0, 0, -1))->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(mBlockLocation.X, mBlockLocation.Y, mBlockLocation.Z - 1) * 100, FVector(1.f, 1.f, 1.f)));
 		return TArray<FBlockInfo>({ FBlockInfo({ (int)mBlockLocation.X,(int)mBlockLocation.Y,(int)mBlockLocation.Z,-1 }) });
 	}
 	return TArray<FBlockInfo>();
@@ -307,7 +312,6 @@ TArray<FBlockInfo> ACircleOnlyMapGenerator::BreakBlock_Internal(FVector mBlockLo
 
 ACircleOnlyMapGenerator::ACircleOnlyMapGenerator()
 {
-	RootComponent= CreateDefaultSubobject<USceneComponent>("RootComponent");
 	SetReplicates(true);
 }
 
@@ -318,15 +322,19 @@ ACircleOnlyMapGenerator::~ACircleOnlyMapGenerator()
 void ACircleOnlyMapGenerator::GenMapBlockInstance_Implementation(UObject* WorldContextObj, int MaxEngth, int MaxWidth, int MaxHeight,int32 Seed)
 {
 	USimplexNoiseBPLibrary::setNoiseSeed(Seed);
-	MapHolder = WorldContextObj->GetWorld()->SpawnActor<AActor>(FVector(0, 0, 0), FRotator(0, 0, 0));
-	MapBlockInstance = NewObject<UInstancedStaticMeshComponent>();
-	MapBlockInstance->RegisterComponentWithWorld(WorldContextObj->GetWorld());
-	MapBlockInstance->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/FireBall/Meshs/SimpleBox.SimpleBox'")));
-	UMaterial* tmpMat = LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/FireBall/Materials/BlockBaseMat.BlockBaseMat'"));
+	UMaterial* tmpMat = LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/FireBall/Materials/BlockScaleMat.BlockScaleMat'"));
+	for (int i=0;i<6;i++)
+	{
+		int index= MapBlockInstances.Add(NewObject<UInstancedStaticMeshComponent>());
+		MapBlockInstances[index]->RegisterComponentWithWorld(WorldContextObj->GetWorld());
+		MapBlockInstances[index]->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/FireBall/Meshs/SimpleBox.SimpleBox'")));
+		UMaterialInstanceDynamic* BlockDMI = UMaterialInstanceDynamic::Create(tmpMat, MapBlockInstances[index]);
+		BlockDMI->SetVectorParameterValue("Color", FLinearColor(1.f-FMath::RandRange(i / 7.f, (i + 1) / 7.f), 1.f-FMath::RandRange(i / 7.f, (i + 1) / 7.f), 1.f-FMath::RandRange(i / 7.f, (i + 1) / 7.f)));
+		MapBlockInstances[index]->SetMaterial(0, BlockDMI);
+		BlockDMIs.Add(BlockDMI);
+	}
 	MaxXYZ = FVector(MaxEngth, MaxWidth, MaxHeight);
 	//MapBlockInstance->SetMaterial(0, tmpMat);
-	BlockDMI=UMaterialInstanceDynamic::Create(tmpMat,MapBlockInstance);
-	MapBlockInstance->SetMaterial(0,BlockDMI);
 	for (int z=-MaxHeight /2;z<MaxHeight /2;z++)
 		for (int y = -MaxWidth / 2; y<MaxWidth / 2; y++)
 			for (int x = -MaxEngth / 2; x < MaxEngth/ 2; x++)
@@ -334,21 +342,15 @@ void ACircleOnlyMapGenerator::GenMapBlockInstance_Implementation(UObject* WorldC
 				if (ShouldPlaceBlock(FVector(x,y,z), FVector(MaxEngth,MaxWidth,MaxHeight)))
 				{
 					MapVariation.FindOrAdd(x).FindOrAdd(y).FindOrAdd(z)=
-					MapBlockInstance->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(x, y, z) * 100, FVector(1.f, 1.f, 1.f)));
+					GetMapBlockInstance(FVector(x, y, z))->AddInstanceWorldSpace(FTransform(FRotator(0, 0, 0), FVector(x, y, z) * 100, FVector(1.f, 1.f, 1.f)));
 				}
 			}
-	MapBlockInstance->SetCullDistances(10, 20);
-	MapBlockInstance->Rename(TEXT("MapBlockHolder"), MapHolder);
-	MapHolder->SetRootComponent(MapBlockInstance);
-	if (!MapHolder->GetRootComponent())
+	for (int i = 0; i < 6; i++)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "Error:NULL Root Component From MapHolder!");
-		return;
+		AActor* MapHolder = WorldContextObj->GetWorld()->SpawnActor<AActor>(FVector(0, 0, 0), FRotator(0, 0, 0));
+		MapBlockInstances[i]->Rename(*FString::Printf(TEXT("MapHolder%d"), i), MapHolder);
+		MapHolder->SetRootComponent(MapBlockInstances[i]);
 	}
-	// InstacedStaticMeshComponent Doesn't Support Replication
-	// Disable Replicate otherwise many warning will generate.
-	MapHolder->SetReplicates(false);
-	MapHolder->bNetLoadOnClient = false;
 	
 	// Test Only
 	/*UStaticMeshComponent* StaticMeshC = NewObject<UStaticMeshComponent>();
@@ -359,9 +361,9 @@ void ACircleOnlyMapGenerator::GenMapBlockInstance_Implementation(UObject* WorldC
 }
 
 
-class UMaterialInstanceDynamic* ACircleOnlyMapGenerator::GetDMI_Implementation()
+TArray<class UMaterialInstanceDynamic*> ACircleOnlyMapGenerator::GetDMIs_Implementation()
 {
-	return BlockDMI;
+	return BlockDMIs;
 }
 
 void ACircleOnlyMapGenerator::SyncMap_Implementation(const TArray<FBlockInfo>& BlockModifiedInfo)
