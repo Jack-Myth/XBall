@@ -14,7 +14,17 @@ class FIREBALL_API ASkillBase : public AActionBase
 {
 	GENERATED_BODY()
 
+	float CoolDown=0;
 public:
 	UFUNCTION(BlueprintCallable)
 		void SkillLeave();
+	
+	UFUNCTION(BlueprintCallable)
+		void UpdateCoolDown(float CoolDownTime);
+
+	UFUNCTION(BlueprintNativeEvent)
+		void SelectedWhileCD();
+
+	UFUNCTION(BlueprintCallable)
+		bool IsCoolingDown();
 };

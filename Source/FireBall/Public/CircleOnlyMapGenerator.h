@@ -14,6 +14,7 @@ class FIREBALL_API ACircleOnlyMapGenerator:public AActor,public IMapGenerator
 {
 	GENERATED_BODY()
 
+	TArray<FLinearColor> BlockColorTemplate;
 	bool LocationShouldHaveBlock(FVector BlockXYZ, FVector MaxXYZ);
 	bool ShouldPlaceBlock(FVector BlockXYZ, FVector MaxXYZ);
 	void SetBlockHealth(FVector BlockLocation,float newHealth);

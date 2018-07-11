@@ -12,9 +12,9 @@
 
 bool ACircleOnlyMapGenerator::LocationShouldHaveBlock(FVector BlockXYZ, FVector MaxXYZ)
 {
-	return abs(BlockXYZ.Z) > MaxXYZ.Z * 0.4 ||
-		abs(BlockXYZ.Y) > MaxXYZ.Y * 0.4 ||
-		abs(BlockXYZ.X) > MaxXYZ.X * 0.4 || 
+	return abs(BlockXYZ.Z) > MaxXYZ.Z *0.4 ||
+		abs(BlockXYZ.Y) > MaxXYZ.Y *0.4 ||
+		abs(BlockXYZ.X) > MaxXYZ.X *0.4 || 
 		USimplexNoiseBPLibrary::SimplexNoise3D(BlockXYZ.X / 20.f, BlockXYZ.Y / 20.f, BlockXYZ.Z / 10.f) > 0.5;
 }
 
@@ -176,15 +176,44 @@ TArray<FBlockInfo> ACircleOnlyMapGenerator::HitBlock_Internal(FVector mBlockLoca
 		float tmpHealth = GetBlockHealth(mBlockLocation);
 		if (tmpHealth == -1)
 		{
-			if (Damage >= 100)
+			// For different Block type, Give Different MaxHealth
+			int MaxHealth=100;
+			if (abs(mBlockLocation.X) > MaxXYZ.X - 1 ||
+				abs(mBlockLocation.Y) > MaxXYZ.Y - 1 ||
+				abs(mBlockLocation.Z) > MaxXYZ.Z - 1)
+			{
+				MaxHealth = 700;
+			}
+			else
+			{
+				switch ((int)(USimplexNoiseBPLibrary::SimplexNoise3D(mBlockLocation.X, mBlockLocation.Y, mBlockLocation.Z) * 10))
+				{
+					case 5:
+						MaxHealth = 100;
+						break;
+					case 6:
+						MaxHealth = 200;
+						break;
+					case 7:
+						MaxHealth = 300;
+						break;
+					case 8:
+						MaxHealth = 400;
+						break;
+					case 9:
+						MaxHealth = 500;
+						break;
+				}
+			}
+			if (Damage >= MaxHealth)
 			{
 				curBlockInfo.Value = -1;
 				BreakBlock_Internal(mBlockLocation);
 			}
 			else
 			{
-				SetBlockHealth(mBlockLocation, 100 - Damage);
-				curBlockInfo.Value = 100 - Damage;
+				SetBlockHealth(mBlockLocation, MaxHealth - Damage);
+				curBlockInfo.Value = MaxHealth - Damage;
 			}
 		}
 		else
@@ -293,7 +322,7 @@ void ACircleOnlyMapGenerator::GenMapBlockInstance_Implementation(UObject* WorldC
 	MapBlockInstance = NewObject<UInstancedStaticMeshComponent>();
 	MapBlockInstance->RegisterComponentWithWorld(WorldContextObj->GetWorld());
 	MapBlockInstance->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/FireBall/Meshs/SimpleBox.SimpleBox'")));
-	UMaterial* tmpMat = LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/FireBall/Materials/BlockScaleMat.BlockScaleMat'"));
+	UMaterial* tmpMat = LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/FireBall/Materials/BlockBaseMat.BlockBaseMat'"));
 	MaxXYZ = FVector(MaxEngth, MaxWidth, MaxHeight);
 	//MapBlockInstance->SetMaterial(0, tmpMat);
 	BlockDMI=UMaterialInstanceDynamic::Create(tmpMat,MapBlockInstance);

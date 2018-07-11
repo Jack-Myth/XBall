@@ -39,3 +39,8 @@ AActionBase::AActionBase()
 {
 	SetReplicates(true);
 }
+
+int AActionBase::GetPrice_Implementation()
+{
+	return 0;
+}

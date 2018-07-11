@@ -190,16 +190,18 @@ void AXBallBase::ShowScreenEffectDamaged_Implementation(int Damage, const AContr
 	if (DamageBlendAlpha<=0)
 	{
 		DamageBlendAlpha += 0.3f;
-		GetWorld()->GetTimerManager().SetTimer(tmpTimerHandle,[tmpTimerHandle,this]()
+		GetWorld()->GetTimerManager().SetTimer(tmpTimerHandle,[=]()
 			{
-				if (DamageBlendAlpha <= 0||this->IsPendingKill())
+				DamageBlendAlpha -= 0.02;
+				if (this->IsPendingKill())
+					return;
+				if (DamageBlendAlpha <= 0)
 				{
 					DamageBlendAlpha = 0;
 					FTimerHandle tmpTimerHandlex = tmpTimerHandle;
 					GetWorld()->GetTimerManager().ClearTimer(tmpTimerHandlex);
 				}
 				DamagedEffect->SetScalarParameterValue("Alpha", DamageBlendAlpha);
-				DamageBlendAlpha -= 0.02;
 			},0.02f,true,-1.f);
 	}
 	else

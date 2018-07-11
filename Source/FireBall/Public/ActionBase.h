@@ -42,6 +42,9 @@ public:
 	{
 		return HolderPawn;
 	}
+	
+	UFUNCTION(BlueprintNativeEvent)
+		int GetPrice();
 
 	UFUNCTION(BlueprintImplementableEvent)
 		void BeginSelected(FVector TargetLocation);
