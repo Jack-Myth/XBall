@@ -205,7 +205,7 @@ void AXBallBase::BeginPlay()
 {
 	Super::BeginPlay();
 	//Setup Camera Effect
-	DamagedEffect = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/FireBall/Materials/DamageEffect.DamageEffect'")));
+	DamagedEffect = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/XBall/Materials/DamageEffect.DamageEffect'")));
 	PlayerCamera->AddOrUpdateBlendable(DamagedEffect);
 
 	// Setup Cursor（Player Target）
@@ -549,22 +549,22 @@ void AXBallBase::InitPlayer_Implementation(int Team)
 	switch (Team)
 	{
 		case 0: //默认
-			MatInterface=LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/FireBall/Materials/TeamMat/TeamColorBase.TeamColorBase'"));
+			MatInterface=LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/XBall/Materials/TeamMat/TeamColorBase.TeamColorBase'"));
 			break;
 		case 1: //蓝队
-			MatInterface= LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/FireBall/Materials/TeamMat/TeamColor_Blue.TeamColor_Blue'"));
+			MatInterface= LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/XBall/Materials/TeamMat/TeamColor_Blue.TeamColor_Blue'"));
 			break;
 		case 2: //红队
-			MatInterface=LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/FireBall/Materials/TeamMat/TeamColor_Red.TeamColor_Red'"));
+			MatInterface=LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/XBall/Materials/TeamMat/TeamColor_Red.TeamColor_Red'"));
 			break;
 		case 3: //黄队
-			MatInterface= LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/FireBall/Materials/TeamMat/TeamColor_Yellow.TeamColor_Yellow'"));
+			MatInterface= LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/XBall/Materials/TeamMat/TeamColor_Yellow.TeamColor_Yellow'"));
 			break;
 		case 4: //绿队
-			MatInterface= LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/FireBall/Materials/TeamMat/TeamColor_Green.TeamColor_Green'"));
+			MatInterface= LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/XBall/Materials/TeamMat/TeamColor_Green.TeamColor_Green'"));
 			break;
 		default:
-			MatInterface= LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/FireBall/Materials/TeamMat/TeamColorBase.TeamColorBase'"));
+			MatInterface= LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/XBall/Materials/TeamMat/TeamColorBase.TeamColorBase'"));
 			break;
 	}
 	UMaterialInstanceDynamic* TargetDMI = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, MatInterface);

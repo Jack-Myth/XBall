@@ -9,7 +9,7 @@
 
 ADefaultPlayerTarget::ADefaultPlayerTarget()
 {
-	SetDecalMaterial(ConstructorHelpers::FObjectFinder<UMaterial>(TEXT("Material'/Game/FireBall/Materials/DefaultTarget.DefaultTarget'")).Object);
+	SetDecalMaterial(ConstructorHelpers::FObjectFinder<UMaterial>(TEXT("Material'/Game/XBall/Materials/DefaultTarget.DefaultTarget'")).Object);
 	GetDecal()->DecalSize = FVector(10, 50, 50);
 }
 
