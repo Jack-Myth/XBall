@@ -27,32 +27,212 @@ bool AXBallPlayerControllerBase::ReGenOldMap_Validate(UClass* MapGenerator,int M
 
 AXBallPlayerControllerBase::AXBallPlayerControllerBase()
 {
-	ActionClasses.SetNum(7);
+	TempActionBar.SetNum(8);
 }
 
 int AXBallPlayerControllerBase::GetTeam()
 {
-	return Team;
+	AXBallPlayerState* tmpPlayerState = GetXBallPlayerState();
+	if (tmpPlayerState)
+	{
+		return tmpPlayerState->Team;
+	}
+	return 0;
 }
 
 void AXBallPlayerControllerBase::SetTeam_Implementation(int NewTeam)
 {
-	Team = NewTeam;
+	ClearScore(EScoreType::ST_Kill);
+	AXBallPlayerState* tmpPlayerState = GetXBallPlayerState();
+	if (tmpPlayerState)
+	{
+		tmpPlayerState->Team=NewTeam;
+	}
 }
 
 void AXBallPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
 {
-	DOREPLIFETIME(AXBallPlayerControllerBase, Team);
+	DOREPLIFETIME(AXBallPlayerControllerBase, ActionInventory)
+	DOREPLIFETIME(AXBallPlayerControllerBase, TempActionBar);
 }
 
 void AXBallPlayerControllerBase::Possess(APawn* aPawn)
 {
 	Super::Possess(aPawn);
-	AXBallBase* tmpBall = Cast<AXBallBase>(aPawn);
+	/*AXBallBase* tmpBall = Cast<AXBallBase>(aPawn);
 	if (tmpBall)
 	{
-		tmpBall->InitPlayer(Team);
+		tmpBall->InitPlayer(GetTeam());
+	}*/
+}
+
+void AXBallPlayerControllerBase::ModifyScore(EScoreType Type)
+{
+	AXBallPlayerState* XBallPlayerState = GetXBallPlayerState();
+	if (!XBallPlayerState)
+		return;
+	switch (Type)
+	{
+		case EScoreType::ST_Kill:
+			XBallPlayerState->KillScore++;
+			return;
+		case EScoreType::ST_Dead:
+			XBallPlayerState->DeadCount++;
+			return;
+		case EScoreType::ST_ALL:
+			XBallPlayerState->KillScore++;
+			XBallPlayerState->DeadCount++;
+			return;
 	}
+}
+
+void AXBallPlayerControllerBase::ClearScore(EScoreType Type)
+{
+	AXBallPlayerState* XBallPlayerState = GetXBallPlayerState();
+	if (!XBallPlayerState)
+		return;
+	switch (Type)
+	{
+		case EScoreType::ST_Kill:
+			XBallPlayerState->KillScore = 0;
+			return;
+		case EScoreType::ST_Dead:
+			XBallPlayerState->DeadCount = 0;
+			return;
+		case EScoreType::ST_ALL:
+			XBallPlayerState->KillScore = 0;
+			XBallPlayerState->DeadCount = 0;
+			return;
+	}
+}
+
+int AXBallPlayerControllerBase::GetScore(EScoreType Type)
+{
+	AXBallPlayerState* XBallPlayerState = GetXBallPlayerState();
+	if (!XBallPlayerState)
+		return -1;
+	switch (Type)
+	{
+		case EScoreType::ST_Kill:
+			return XBallPlayerState->KillScore;
+		case EScoreType::ST_Dead:
+			return XBallPlayerState->DeadCount;
+		default:
+			return -1;
+	}
+}
+
+bool AXBallPlayerControllerBase::Buy_Internal(TSubclassOf<AActionBase> ActionClass, FString& RetMessage)
+{
+	if (Coins >= ActionClass->GetDefaultObject<AActionBase>()->GetPrice())
+	{
+		Coins -= ActionClass->GetDefaultObject<AActionBase>()->GetPrice();
+		if (ActionInventory.FindLastByPredicate([=](AActionBase* const Item){return Item->GetClass() == ActionClass;})!=INDEX_NONE)
+		{
+			RetMessage = "已拥有此物品";
+		}
+		RetMessage = TEXT("购买成功");
+		FActorSpawnParameters tmpSpawnParamters;
+		tmpSpawnParamters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		ActionInventory.Add(GetWorld()->SpawnActor<AActionBase>(ActionClass,tmpSpawnParamters));
+		return true;
+	}
+	else
+	{
+		RetMessage = TEXT("金钱不足");
+	}
+	return false;
+}
+
+void AXBallPlayerControllerBase::ShowOK_Implementation(const FString& Title, const FString& Message)
+{
+
+}
+
+void AXBallPlayerControllerBase::ShowWarning_Implementation(const FString& Title, const FString& Message)
+{
+
+}
+
+void AXBallPlayerControllerBase::ShowMessage_Implementation(const FString& Title, const FString& Message)
+{
+
+}
+
+void AXBallPlayerControllerBase::MoveActionToInventory_Implementation(int ActionBarIndex)
+{
+	AXBallBase* XballCharacter = Cast<AXBallBase>(GetCharacter());
+	if (XballCharacter)
+	{
+		AActionBase* TargetAction = XballCharacter->RemoveActionFromBar(ActionBarIndex);
+		if (TargetAction)
+		{
+			ActionInventory.Add(TargetAction);
+		}
+	}
+	else
+	{
+		if (TempActionBar[ActionBarIndex])
+		{
+			ActionInventory.Add(TempActionBar[ActionBarIndex]);
+			TempActionBar[ActionBarIndex] = nullptr;
+		}
+	}
+}
+
+bool AXBallPlayerControllerBase::MoveActionToInventory_Validate(int ActionBarIndex)
+{
+	if (ActionBarIndex > 7 || ActionBarIndex < 0)
+		return false;
+	return true;
+}
+
+void AXBallPlayerControllerBase::MoveActionToActionBar_Implementation(AActionBase* ActionInstance, int AddToIndex)
+{
+	int InventoryIndex;
+	if (ActionInventory.Find(ActionInstance, InventoryIndex))
+	{
+		AXBallBase* XballCharacter= Cast<AXBallBase>(GetCharacter());
+		if (XballCharacter)
+		{
+			AActionBase* ReplacedAction = XballCharacter->AddActionToBar(AddToIndex, ActionInstance);
+			if (ReplacedAction)
+			{
+				ActionInventory.Add(ReplacedAction);
+			}
+			ActionInventory.RemoveAt(InventoryIndex);
+		}
+		else
+		{
+			TempActionBar[AddToIndex] = ActionInstance;
+			ActionInventory.RemoveAt(InventoryIndex);
+		}
+	}
+}
+
+bool AXBallPlayerControllerBase::MoveActionToActionBar_Validate(AActionBase* ActionInstance, int AddToIndex)
+{
+	if (AddToIndex > 7 || AddToIndex < 0||(!ActionInstance))
+		return false;
+	return true;
+}
+
+void AXBallPlayerControllerBase::Buy_Implementation(TSubclassOf<AActionBase> ActionClass)
+{
+	FString Msg;
+	if (Buy_Internal(ActionClass,Msg))
+	{
+		ShowOK(FString("购买成功"), Msg);
+	}
+	else
+	{
+		ShowWarning(FString("Failed"), Msg);
+	}
+}
+
+bool AXBallPlayerControllerBase::Buy_Validate(TSubclassOf<AActionBase> ActionClass)
+{
+	return true;
 }
 
 void AXBallPlayerControllerBase::UpdatePicData_Implementation(const FString& TextureParamName, const TArray<uint8>& TextureData)

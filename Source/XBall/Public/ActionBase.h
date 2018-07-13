@@ -22,6 +22,9 @@ class XBALL_API AActionBase : public AActor
 	GENERATED_BODY()
 
 	class AXBallBase* HolderPawn;
+protected:
+	UPROPERTY(EditDefaultsOnly)
+		int Price = 0;
 public:
 	AActionBase();
 	/*UFUNCTION(BlueprintCallable,Server,Reliable,WithValidation)
@@ -42,9 +45,12 @@ public:
 	{
 		return HolderPawn;
 	}
-	
-	UFUNCTION(BlueprintNativeEvent)
-		int GetPrice();
+		
+	UFUNCTION(BlueprintCallable)
+	inline int GetPrice()
+	{
+		return Price;
+	}	
 
 	UFUNCTION(BlueprintImplementableEvent)
 		void BeginSelected(FVector TargetLocation);

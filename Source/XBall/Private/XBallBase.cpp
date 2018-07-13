@@ -19,6 +19,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "TimerManager.h"
 #include "Engine/Texture2D.h"
+#include "UnrealNetwork.h"
 
 
 FVector AXBallBase::GetCursorLocation(FVector* outSurfaceNormal) 
@@ -163,6 +164,25 @@ void AXBallBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 	if(PlayerTarget)
 		IScenePlayerTarget::Execute_NotifyDestruction(PlayerTarget);
+	for (int i = 0; i < ActionList.Num(); i++)
+	{
+		if (ActionList[i])
+		{
+			ActionList[i]->Destroy();
+		}
+	}
+}
+
+void AXBallBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	AXBallPlayerControllerBase* XballController = Cast<AXBallPlayerControllerBase>(NewController);
+	InitPlayer(XballController->GetTeam());
+}
+
+void AXBallBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	DOREPLIFETIME(AXBallBase, ActionList);
 }
 
 void AXBallBase::CheckShouldDie_Implementation()
@@ -184,14 +204,6 @@ void AXBallBase::NotifyRespawn()
 
 void AXBallBase::DieDefault_Implementation()
 {
-	for (int i=0;i<ActionList.Num();i++)
-	{
-		if (ActionList[i])
-		{
-			ActionList[i]->Destroy();
-		}
-	}
-
 	//Only Server Can Respawn Player Character.
 	if(HasAuthority())
 		NotifyRespawn();
@@ -580,5 +592,7 @@ void AXBallBase::InitPlayer_Implementation(int Team)
 				TargetDMI->SetTextureParameterValue(*(it->Key), it->Value);
 			}
 		}
+		ActionList = GetXBallController()->GetTempActionBar();
+		GetXBallController()->ClearTempActionBar();
 	}
 }

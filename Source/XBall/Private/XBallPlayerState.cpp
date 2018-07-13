@@ -2,6 +2,7 @@
 
 #include "XBallPlayerState.h"
 #include "MyBPFuncLib.h"
+#include "UnrealNetwork.h"
 
 void AXBallPlayerState::SetCustomTexture_Implementation(const FString& TextureParamterName, const TArray<uint8>& TextureData)
 {
@@ -15,4 +16,11 @@ void AXBallPlayerState::SetCustomTexture_Implementation(const FString& TexturePa
 		CustomTexturesData.Remove(TextureParamterName);
 		CustomTextures.Remove(TextureParamterName);
 	}
+}
+
+void AXBallPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
+{
+	DOREPLIFETIME(AXBallPlayerState, KillScore);
+	DOREPLIFETIME(AXBallPlayerState, DeadCount);
+	DOREPLIFETIME(AXBallPlayerState, Team);
 }

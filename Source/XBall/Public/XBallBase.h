@@ -25,7 +25,9 @@ class XBALL_API AXBallBase : public ACharacter
 	UObject* PlayerTarget=nullptr;
 	FVector GetCursorLocation(FVector* outSurfaceNormal=nullptr);
 	FVector TargetLocationCache;
-	TArray<AActionBase*> ActionList;
+
+	UPROPERTY(Replicated)
+		TArray<AActionBase*> ActionList;
 public:
 	UPROPERTY(BlueprintReadWrite,EditAnywhere)
 		class USpringArmComponent* CameraArm = nullptr;
@@ -47,6 +49,12 @@ public:
 		void NotifySkillLeave();
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+
+	virtual void PossessedBy(AController* NewController) override;
+
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 
