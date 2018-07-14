@@ -52,19 +52,20 @@ void AXBallPlayerControllerBase::SetTeam_Implementation(int NewTeam)
 
 void AXBallPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
 {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AXBallPlayerControllerBase, ActionInventory)
 	DOREPLIFETIME(AXBallPlayerControllerBase, TempActionBar);
 }
 
-void AXBallPlayerControllerBase::Possess(APawn* aPawn)
+/*void AXBallPlayerControllerBase::Possess(APawn* aPawn)
 {
 	Super::Possess(aPawn);
-	/*AXBallBase* tmpBall = Cast<AXBallBase>(aPawn);
+	AXBallBase* tmpBall = Cast<AXBallBase>(aPawn);
 	if (tmpBall)
 	{
 		tmpBall->InitPlayer(GetTeam());
-	}*/
-}
+	}
+}*/
 
 void AXBallPlayerControllerBase::ModifyScore(EScoreType Type)
 {

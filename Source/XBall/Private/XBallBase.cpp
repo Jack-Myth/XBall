@@ -177,12 +177,15 @@ void AXBallBase::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 	AXBallPlayerControllerBase* XballController = Cast<AXBallPlayerControllerBase>(NewController);
-	InitPlayer(XballController->GetTeam());
+	Team= XballController->GetTeam();
+	RefreshPlayerAppearance(Team);
 }
 
 void AXBallBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AXBallBase, ActionList);
+	DOREPLIFETIME(AXBallBase, Team);
 }
 
 void AXBallBase::CheckShouldDie_Implementation()
@@ -555,8 +558,9 @@ class AXBallPlayerControllerBase* AXBallBase::GetXBallController()
 	return Cast<AXBallPlayerControllerBase>(GetController());
 }
 
-void AXBallBase::InitPlayer_Implementation(int Team)
+void AXBallBase::RefreshPlayerAppearance(int Team)
 {
+	UE_LOG(LogTemp, Display, TEXT("Init Player"));
 	UMaterialInterface* MatInterface;
 	switch (Team)
 	{
@@ -595,4 +599,9 @@ void AXBallBase::InitPlayer_Implementation(int Team)
 		ActionList = GetXBallController()->GetTempActionBar();
 		GetXBallController()->ClearTempActionBar();
 	}
+}
+
+void AXBallBase::Rep_Team()
+{
+	RefreshPlayerAppearance(Team);
 }

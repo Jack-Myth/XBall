@@ -48,6 +48,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void NotifySkillLeave();
 
+	UPROPERTY(ReplicatedUsing="Rep_Team")
+		int Team=-1;
+
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 
@@ -180,8 +183,11 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	// Init Team and Player Material
-	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
-		void InitPlayer(int Team);
+	UFUNCTION(BlueprintCallable)
+		void RefreshPlayerAppearance(int mTeam);
+
+	UFUNCTION()
+		void Rep_Team();
 
 	UFUNCTION(BlueprintCallable)
 		class AXBallPlayerControllerBase* GetXBallController();

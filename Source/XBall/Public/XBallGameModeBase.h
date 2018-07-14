@@ -42,10 +42,19 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void PrepareReSpawn(AXBallPlayerControllerBase* TargetController);
 
-
+	
 	/*virtual APawn* SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer, const FTransform& SpawnTransform) override;*/
 
 
 	virtual void RestartPlayerAtTransform(AController* NewPlayer, const FTransform& SpawnTransform) override;
+
+protected:
+	virtual void HandleMatchHasStarted() override;
+
+
+	virtual void HandleMatchHasEnded() override;
+
+private:
+	virtual bool IsMatchInProgress() const override;
 
 };

@@ -322,12 +322,12 @@ ACircleOnlyMapGenerator::~ACircleOnlyMapGenerator()
 void ACircleOnlyMapGenerator::GenMapBlockInstance_Implementation(UObject* WorldContextObj, int MaxEngth, int MaxWidth, int MaxHeight,int32 Seed)
 {
 	USimplexNoiseBPLibrary::setNoiseSeed(Seed);
-	UMaterial* tmpMat = LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/FireBall/Materials/BlockScaleMat.BlockScaleMat'"));
+	UMaterial* tmpMat = LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/XBall/Materials/BlockScaleMat.BlockScaleMat'"));
 	for (int i=0;i<6;i++)
 	{
 		int index= MapBlockInstances.Add(NewObject<UInstancedStaticMeshComponent>());
 		MapBlockInstances[index]->RegisterComponentWithWorld(WorldContextObj->GetWorld());
-		MapBlockInstances[index]->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/FireBall/Meshs/SimpleBox.SimpleBox'")));
+		MapBlockInstances[index]->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/XBall/Meshs/SimpleBox.SimpleBox'")));
 		UMaterialInstanceDynamic* BlockDMI = UMaterialInstanceDynamic::Create(tmpMat, MapBlockInstances[index]);
 		BlockDMI->SetVectorParameterValue("Color", FLinearColor(1.f-FMath::RandRange(i / 7.f, (i + 1) / 7.f), 1.f-FMath::RandRange(i / 7.f, (i + 1) / 7.f), 1.f-FMath::RandRange(i / 7.f, (i + 1) / 7.f)));
 		MapBlockInstances[index]->SetMaterial(0, BlockDMI);
@@ -355,7 +355,7 @@ void ACircleOnlyMapGenerator::GenMapBlockInstance_Implementation(UObject* WorldC
 	// Test Only
 	/*UStaticMeshComponent* StaticMeshC = NewObject<UStaticMeshComponent>();
 	StaticMeshC->RegisterComponentWithWorld(WorldContextObj->GetWorld());
-	StaticMeshC->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/FireBall/Meshs/SimpleBox.SimpleBox'")));
+	StaticMeshC->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/XBall/Meshs/SimpleBox.SimpleBox'")));
 	StaticMeshC->SetWorldScale3D(FVector(5, 5, 0.5));
 	StaticMeshC->SetWorldLocation(FVector(0, 0, -300));*/
 }

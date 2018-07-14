@@ -94,6 +94,24 @@ void AXBallGameModeBase::RestartPlayerAtTransform(AController* NewPlayer, const 
 	Super::RestartPlayerAtTransform(NewPlayer, tmpTransform);
 }
 
+void AXBallGameModeBase::HandleMatchHasStarted()
+{
+	Super::HandleMatchHasStarted();
+	UE_LOG(LogTemp, Display, TEXT("Match Has Started"));
+}
+
+void AXBallGameModeBase::HandleMatchHasEnded()
+{
+	Super::HandleMatchHasEnded();
+	UE_LOG(LogTemp, Display, TEXT("Match Has Ended"));
+}
+
+bool AXBallGameModeBase::IsMatchInProgress() const
+{
+	UE_LOG(LogTemp, Display, TEXT("Is Match In Progress"));
+	return true;
+}
+
 /*APawn* AXBallGameModeBase::SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer, const FTransform& SpawnTransform)
 {	
 	return Super::SpawnDefaultPawnAtTransform_Implementation(NewPlayer, SpawnTransform);

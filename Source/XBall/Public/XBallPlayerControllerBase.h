@@ -82,7 +82,7 @@ public:
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const override;
 
-	virtual void Possess(APawn* aPawn) override;
+	//virtual void Possess(APawn* aPawn) override;
 
 	void ModifyScore(EScoreType Type);
 	void ClearScore(EScoreType Type);
