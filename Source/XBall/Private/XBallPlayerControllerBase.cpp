@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UnrealNetwork.h"
 #include "XBallPlayerState.h"
+#include "UserWidget.h"
 
 void AXBallPlayerControllerBase::ReGenOldMap_Implementation(UClass* MapGenerator,int MaxEngth, int MaxWidth, int MaxHeight, int32 Seed,const TArray<FBlockInfo>& BlockInfo)
 {
@@ -23,6 +24,14 @@ void AXBallPlayerControllerBase::ReGenOldMap_Implementation(UClass* MapGenerator
 bool AXBallPlayerControllerBase::ReGenOldMap_Validate(UClass* MapGenerator,int MaxEngth, int MaxWidth, int MaxHeight, int32 Seed, const TArray<FBlockInfo>& BlockInfo)
 {
 	return true;
+}
+
+void AXBallPlayerControllerBase::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+	InputComponent->BindAction("Inventory", EInputEvent::IE_Pressed, this, &AXBallPlayerControllerBase::ToggleActionInventory);
+	InputComponent->BindAction("Rank", EInputEvent::IE_Pressed, this, &AXBallPlayerControllerBase::OpenRank);
+	InputComponent->BindAction("Rank", EInputEvent::IE_Released, this, &AXBallPlayerControllerBase::CloseRank);
 }
 
 AXBallPlayerControllerBase::AXBallPlayerControllerBase()
@@ -55,6 +64,7 @@ void AXBallPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AXBallPlayerControllerBase, ActionInventory)
 	DOREPLIFETIME(AXBallPlayerControllerBase, TempActionBar);
+	DOREPLIFETIME(AXBallPlayerControllerBase, bIsInLobby);
 }
 
 /*void AXBallPlayerControllerBase::Possess(APawn* aPawn)
@@ -143,6 +153,43 @@ bool AXBallPlayerControllerBase::Buy_Internal(TSubclassOf<AActionBase> ActionCla
 		RetMessage = TEXT("½ðÇ®²»×ã");
 	}
 	return false;
+}
+
+void AXBallPlayerControllerBase::ToggleActionInventory()
+{
+	//Lobby should not open Inventory
+	if(!IsInLobby())
+	{
+		if (ActionInventoryWidget)
+		{
+			ActionInventoryWidget->RemoveFromParent();
+			ActionInventoryWidget = nullptr;
+		}
+		else
+		{
+			TSubclassOf<UUserWidget> InventoryUMGClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/Inventory.Inventory'"));
+			if (InventoryUMGClass)
+			{
+				UUserWidget* InventoryWidget = UUserWidget::CreateWidgetOfClass(InventoryUMGClass, nullptr, nullptr, this);
+				InventoryWidget->AddToViewport();
+				ActionInventoryWidget = InventoryWidget;
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("Failed To Load InventoryUMG Class"));
+			}
+		}
+	}
+}
+
+void AXBallPlayerControllerBase::OpenRank()
+{
+
+}
+
+void AXBallPlayerControllerBase::CloseRank()
+{
+
 }
 
 void AXBallPlayerControllerBase::ShowOK_Implementation(const FString& Title, const FString& Message)

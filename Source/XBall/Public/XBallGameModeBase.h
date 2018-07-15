@@ -31,8 +31,11 @@ public:
 
 	virtual void BeginPlay() override;
 
-	void SetIsTeamGame(bool isTeamGame);
-	bool IsTeamGame();
+	UFUNCTION(BlueprintCallable)
+		void SetIsTeamGame(bool isTeamGame);
+
+	UFUNCTION(BlueprintPure)
+		bool IsTeamGame();
 
 	virtual void Tick(float DeltaSeconds) override;
 

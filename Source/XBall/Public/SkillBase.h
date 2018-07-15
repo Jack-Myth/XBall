@@ -25,6 +25,6 @@ public:
 	UFUNCTION(BlueprintNativeEvent)
 		void SelectedWhileCD();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintPure)
 		bool IsCoolingDown();
 };

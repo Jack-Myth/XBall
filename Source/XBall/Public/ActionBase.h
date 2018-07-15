@@ -25,6 +25,8 @@ class XBALL_API AActionBase : public AActor
 protected:
 	UPROPERTY(EditDefaultsOnly)
 		int Price = 0;
+	UPROPERTY(EditDefaultsOnly)
+		UTexture2D* ActionIcon;
 public:
 	AActionBase();
 	/*UFUNCTION(BlueprintCallable,Server,Reliable,WithValidation)
@@ -51,6 +53,12 @@ public:
 	{
 		return Price;
 	}	
+
+	UFUNCTION(BlueprintCallable)
+		inline UTexture2D* GEtActionIcon()
+	{
+		return ActionIcon;
+	}
 
 	UFUNCTION(BlueprintImplementableEvent)
 		void BeginSelected(FVector TargetLocation);

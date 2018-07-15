@@ -26,7 +26,11 @@ class XBALL_API AXBallPlayerControllerBase : public APlayerController
 {
 	GENERATED_BODY()
 
+	UUserWidget* ActionInventoryWidget = nullptr;
+	UUserWidget* RankWidget = nullptr;
 
+	UPROPERTY(Replicated)
+		bool bIsInLobby=true;
 protected:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 		TArray<TSubclassOf<AActionBase>> ActionClasses;
@@ -38,7 +42,10 @@ protected:
 		TArray<AActionBase*> TempActionBar;
 
 	int Coins=800;
-public:	
+
+	virtual void SetupInputComponent() override;
+
+public:
 	AXBallPlayerControllerBase();
 
 	UFUNCTION(BlueprintCallable, NetMulticast,Reliable)
@@ -82,6 +89,18 @@ public:
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const override;
 
+	UFUNCTION(BlueprintCallable)
+		void SetIsInLobby(bool mIsInLobby)
+	{
+		bIsInLobby = mIsInLobby;
+	}
+
+	UFUNCTION(BlueprintPure)
+		inline bool IsInLobby()
+	{
+		return bIsInLobby;
+	}
+
 	//virtual void Possess(APawn* aPawn) override;
 
 	void ModifyScore(EScoreType Type);
@@ -97,7 +116,7 @@ public:
 		return Cast<AXBallPlayerState>(PlayerState);
 	}
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintPure)
 		inline TArray<AActionBase*> GetActionInventory()
 	{
 		return ActionInventory;
@@ -124,4 +143,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Client, Reliable)
 		void ShowOK(const FString& Title, const FString& Message);
+
+	UFUNCTION()
+		void ToggleActionInventory();
+
+	UFUNCTION()
+		void OpenRank();
+	UFUNCTION()
+		void CloseRank();
 };

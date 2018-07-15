@@ -27,7 +27,7 @@ public:
 
 	UFUNCTION(BlueprintCallable,NetMulticast,Reliable)
 		void SetCustomTexture(const FString& TextureParamterName,const TArray<uint8>& TextureData);
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintPure)
 		inline TMap<FString, UTexture2D*> GetCustomTextures()
 	{
 		return CustomTextures;
