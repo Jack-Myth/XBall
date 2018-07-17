@@ -1,7 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ActionBase.h"
-
+#include "UserWidget.h"
+#include "Kismet/GameplayStatics.h"
+#include "XBallPlayerControllerBase.h"
 
 
 
@@ -38,5 +40,23 @@ bool UActionComponentBase::EndReady_Validate(FVector TargetLocation)
 AActionBase::AActionBase()
 {
 	SetReplicates(true);
+}
+
+float AActionBase::GetProgressValue_Implementation()
+{
+	return 1.f;
+}
+
+void AActionBase::TwinkleIcon()
+{
+	auto* XBallController = Cast<AXBallPlayerControllerBase>(UGameplayStatics::GetPlayerController(this, 0));
+	if (XBallController)
+	{
+		UUserWidget* AttachedWidget = XBallController->FindActionBarItemWidgetFor(this);
+		if (AttachedWidget)
+		{
+			AttachedWidget->ProcessEvent(AttachedWidget->FindFunction("TwinkleIcon"), nullptr);
+		}
+	}
 }
 

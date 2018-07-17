@@ -48,14 +48,14 @@ public:
 		return HolderPawn;
 	}
 		
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintPure)
 	inline int GetPrice()
 	{
 		return Price;
 	}	
 
-	UFUNCTION(BlueprintCallable)
-		inline UTexture2D* GEtActionIcon()
+	UFUNCTION(BlueprintPure)
+	inline UTexture2D* GetActionIcon()
 	{
 		return ActionIcon;
 	}
@@ -66,4 +66,9 @@ public:
 		void EndSelected(FVector TargetLocation);
 	UFUNCTION(BlueprintImplementableEvent)
 		void UpdateTargetLocation(FVector TargetLocation);
+
+	UFUNCTION(BlueprintPure,BlueprintNativeEvent)
+		float GetProgressValue();
+	UFUNCTION(BlueprintCallable)
+		void TwinkleIcon();
 };

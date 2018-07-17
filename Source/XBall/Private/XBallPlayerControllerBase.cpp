@@ -7,6 +7,7 @@
 #include "UnrealNetwork.h"
 #include "XBallPlayerState.h"
 #include "UserWidget.h"
+#include "WidgetBlueprintLibrary.h"
 
 void AXBallPlayerControllerBase::ReGenOldMap_Implementation(UClass* MapGenerator,int MaxEngth, int MaxWidth, int MaxHeight, int32 Seed,const TArray<FBlockInfo>& BlockInfo)
 {
@@ -36,7 +37,7 @@ void AXBallPlayerControllerBase::SetupInputComponent()
 
 AXBallPlayerControllerBase::AXBallPlayerControllerBase()
 {
-	TempActionBar.SetNum(8);
+	TempActionBar.SetNum(8,false);
 }
 
 int AXBallPlayerControllerBase::GetTeam()
@@ -59,12 +60,58 @@ void AXBallPlayerControllerBase::SetTeam_Implementation(int NewTeam)
 	}
 }
 
+class UUserWidget* AXBallPlayerControllerBase::FindActionBarItemWidgetFor(AActionBase* ActionInstance)
+{
+	if (ActionBarWidget)
+	{
+		int index;
+		AXBallBase* XballCharacter = Cast<AXBallBase>(GetCharacter());
+		if (XballCharacter)
+		{
+			index = XballCharacter->GetActionBarItems().Find(ActionInstance);
+		}
+		else
+		{
+			index = TempActionBar.Find(ActionInstance);
+		}
+		if (index != INDEX_NONE)
+		{
+			// Use Unreal Reflection System to Call Blueprint Function And Get Result.
+			UFunction* FAIW_Function = ActionBarWidget->FindFunction("FindActionItemWidget");
+			uint8* Buffer= (uint8*)FMemory::Malloc(FAIW_Function->ParmsSize);
+			*(int*)Buffer = index;
+			ActionBarWidget->ProcessEvent(FAIW_Function,Buffer);
+			UProperty* ReturnProperty=nullptr;
+			for (TFieldIterator<UProperty> PropIt(FAIW_Function, EFieldIteratorFlags::ExcludeSuper); PropIt; ++PropIt)
+			{
+				if ((*PropIt)->HasAnyPropertyFlags(CPF_OutParm))
+				{
+					ReturnProperty = *PropIt;
+					break;
+				}
+			}
+			if (ReturnProperty)
+			{
+				UUserWidget* TargetWidget = (UUserWidget*)(*(ReturnProperty->ContainerPtrToValuePtr<UUserWidget*>(Buffer)));
+				FMemory::Free(Buffer);
+				return TargetWidget;
+			}
+			else
+			{
+				FMemory::Free(Buffer);
+			}
+		}
+	}
+	return nullptr;
+}
+
 void AXBallPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AXBallPlayerControllerBase, ActionInventory)
 	DOREPLIFETIME(AXBallPlayerControllerBase, TempActionBar);
 	DOREPLIFETIME(AXBallPlayerControllerBase, bIsInLobby);
+	DOREPLIFETIME(AXBallPlayerControllerBase, Coins);
 }
 
 /*void AXBallPlayerControllerBase::Possess(APawn* aPawn)
@@ -140,45 +187,89 @@ bool AXBallPlayerControllerBase::Buy_Internal(TSubclassOf<AActionBase> ActionCla
 		Coins -= ActionClass->GetDefaultObject<AActionBase>()->GetPrice();
 		if (ActionInventory.FindLastByPredicate([=](AActionBase* const Item){return Item->GetClass() == ActionClass;})!=INDEX_NONE)
 		{
-			RetMessage = "已拥有此物品";
+			RetMessage = TEXT("Already Bought it");
+			return false;
 		}
-		RetMessage = TEXT("购买成功");
+		RetMessage = TEXT("Success");
 		FActorSpawnParameters tmpSpawnParamters;
 		tmpSpawnParamters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		ActionInventory.Add(GetWorld()->SpawnActor<AActionBase>(ActionClass,tmpSpawnParamters));
+		AActionBase* ActionInstance = GetWorld()->SpawnActor<AActionBase>(ActionClass, tmpSpawnParamters);
+		ActionInstance->GetRootComponent()->SetVisibility(false, true);
+		ActionInventory.Add(ActionInstance);
 		return true;
 	}
 	else
 	{
-		RetMessage = TEXT("金钱不足");
+		RetMessage = TEXT("You don't have enought money");
 	}
 	return false;
+}
+
+void AXBallPlayerControllerBase::SwapActionBarItem_Implementation(int IndexA, int IndexB)
+{
+	if (IndexA==IndexB)
+	{
+		return;
+	}
+	AXBallBase* XBallCharacter = Cast<AXBallBase>(GetCharacter());
+	if (XBallCharacter)
+	{
+		AActionBase* ActionA = XBallCharacter->RemoveActionFromBar(IndexA);
+		AActionBase* ActionB = XBallCharacter->RemoveActionFromBar(IndexB);
+		XBallCharacter->AddActionToBar(IndexB, ActionA);
+		XBallCharacter->AddActionToBar(IndexA, ActionB);
+	}
+	else
+	{
+		auto* TempActionBarItem = TempActionBar[IndexA];
+		TempActionBar[IndexA] = TempActionBar[IndexB];
+		TempActionBar[IndexB] = TempActionBarItem;
+	}
+}
+
+bool AXBallPlayerControllerBase::SwapActionBarItem_Validate(int IndexA, int IndexB)
+{
+	if (IndexA > 7 || IndexA < 0)
+		return false;
+	if (IndexB > 7 || IndexB < 0)
+		return false;
+	return true;
 }
 
 void AXBallPlayerControllerBase::ToggleActionInventory()
 {
 	//Lobby should not open Inventory
+	GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Green, "Toggle Action Inventory");
 	if(!IsInLobby())
 	{
 		if (ActionInventoryWidget)
 		{
 			ActionInventoryWidget->RemoveFromParent();
 			ActionInventoryWidget = nullptr;
+			bShowMouseCursor = false;
+			UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(this, nullptr, EMouseLockMode::LockOnCapture);
 		}
 		else
 		{
-			TSubclassOf<UUserWidget> InventoryUMGClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/Inventory.Inventory'"));
+			TSubclassOf<UUserWidget> InventoryUMGClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/Inventory.Inventory_C'"));
 			if (InventoryUMGClass)
 			{
 				UUserWidget* InventoryWidget = UUserWidget::CreateWidgetOfClass(InventoryUMGClass, nullptr, nullptr, this);
 				InventoryWidget->AddToViewport();
 				ActionInventoryWidget = InventoryWidget;
+				bShowMouseCursor = true;
+				UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(this, ActionInventoryWidget, EMouseLockMode::LockOnCapture, false);
 			}
 			else
 			{
 				UE_LOG(LogTemp, Error, TEXT("Failed To Load InventoryUMG Class"));
+				GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Cyan, "Failed To Load InventoryUMG Class");
 			}
 		}
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Cyan, "Is In Lobby");
 	}
 }
 
@@ -192,19 +283,79 @@ void AXBallPlayerControllerBase::CloseRank()
 
 }
 
+void AXBallPlayerControllerBase::InitGameUI_Implementation()
+{
+	//TSubclassOf<UUserWidget> ActionBarClass= LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/ActionBar'"));
+	TSubclassOf<UUserWidget> ActionBarClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/ActionBar.ActionBar_C'"));
+	if (ActionBarClass)	
+	{
+		ActionBarWidget = UUserWidget::CreateWidgetOfClass(ActionBarClass, nullptr, nullptr, this);
+		ActionBarWidget->AddToViewport(1);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed To Load ActionBar UMG Class"));
+	}
+}
+
 void AXBallPlayerControllerBase::ShowOK_Implementation(const FString& Title, const FString& Message)
 {
-
+	TSubclassOf<UUserWidget> DialogWidget = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/Dialog.Dialog_C'"));
+	if (DialogWidget)
+	{
+		UUserWidget* DialogInstance = UUserWidget::CreateWidgetOfClass(DialogWidget, nullptr, nullptr, this);
+		struct DialogInfoParamter
+		{
+			FString Title;
+			FString Message;
+		} tmpPatamter;
+		tmpPatamter.Title = Title;
+		tmpPatamter.Message = Message;
+		DialogInstance->ProcessEvent(DialogInstance->FindFunction("SetDialogInfoAsOK"),&tmpPatamter);
+		DialogInstance->AddToViewport(100);
+	}
+	else
+		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "Error:Failed To Load DialogUMG Class");
 }
 
 void AXBallPlayerControllerBase::ShowWarning_Implementation(const FString& Title, const FString& Message)
 {
-
+	TSubclassOf<UUserWidget> DialogWidget = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/Dialog.Dialog_C'"));
+	if (DialogWidget)
+	{
+		UUserWidget* DialogInstance = UUserWidget::CreateWidgetOfClass(DialogWidget, nullptr, nullptr, this);
+		struct DialogInfoParamter
+		{
+			FString Title;
+			FString Message;
+		} tmpPatamter;
+		tmpPatamter.Title = Title;
+		tmpPatamter.Message = Message;
+		DialogInstance->ProcessEvent(DialogInstance->FindFunction("SetDialogInfoAsOK"), &tmpPatamter);
+		DialogInstance->AddToViewport(100);
+	}
+	else
+		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "Error:Failed To Load DialogUMG Class");
 }
 
 void AXBallPlayerControllerBase::ShowMessage_Implementation(const FString& Title, const FString& Message)
 {
-
+	TSubclassOf<UUserWidget> DialogWidget = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/Dialog.Dialog_C'"));
+	if (DialogWidget)
+	{
+		UUserWidget* DialogInstance = UUserWidget::CreateWidgetOfClass(DialogWidget, nullptr, nullptr, this);
+		struct DialogInfoParamter
+		{
+			FString Title;
+			FString Message;
+		} tmpPatamter;
+		tmpPatamter.Title = Title;
+		tmpPatamter.Message = Message;
+		DialogInstance->ProcessEvent(DialogInstance->FindFunction("SetDialogInfoAsOK"), &tmpPatamter);
+		DialogInstance->AddToViewport(100);
+	}
+	else
+		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "Error:Failed To Load DialogUMG Class");
 }
 
 void AXBallPlayerControllerBase::MoveActionToInventory_Implementation(int ActionBarIndex)
@@ -270,7 +421,7 @@ void AXBallPlayerControllerBase::Buy_Implementation(TSubclassOf<AActionBase> Act
 	FString Msg;
 	if (Buy_Internal(ActionClass,Msg))
 	{
-		ShowOK(FString("购买成功"), Msg);
+		ShowOK(FString(TEXT("Success")), Msg);
 	}
 	else
 	{
@@ -304,19 +455,8 @@ bool AXBallPlayerControllerBase::SetPlayerDefaultCharacter_Validate(TSubclassOf<
 	return true;
 }
 
-bool AXBallPlayerControllerBase::SetActionClass_Validate(int Index, TSubclassOf<AActionBase> NewActionClass)
-{
-	return true;
-}
 
 void AXBallPlayerControllerBase::SetPlayerDefaultCharacter_Implementation(TSubclassOf<AXBallBase> DefaultCharacter)
 {
 	PlayerDefaultCharacter = DefaultCharacter;
-}
-
-void AXBallPlayerControllerBase::SetActionClass_Implementation(int Index, TSubclassOf<AActionBase> NewActionClass)
-{
-	if (Index < 0 || Index>7)
-		return;
-	ActionClasses[Index] = NewActionClass;
 }

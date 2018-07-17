@@ -59,6 +59,8 @@ void AXBallGameModeBase::PostLogin(APlayerController* NewPlayer)
 	TArray<FBlockInfo> x = UMyBPFuncLib::CollectMapModified(this);
 	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Seed Is:%d"), MapSeed));
 	((AXBallPlayerControllerBase*)NewPlayer)->ReGenOldMap(ACircleOnlyMapGenerator::StaticClass(), 100, 100, 50, MapSeed,x);
+	((AXBallPlayerControllerBase*)NewPlayer)->InitGameUI();
+	((AXBallPlayerControllerBase*)NewPlayer)->SetIsInLobby(false);
 }
 
 void AXBallGameModeBase::PrepareReSpawn(AXBallPlayerControllerBase* TargetController)

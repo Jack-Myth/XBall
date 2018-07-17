@@ -14,12 +14,16 @@ class XBALL_API ASkillBase : public AActionBase
 {
 	GENERATED_BODY()
 
-	float CoolDown=0;
+	UPROPERTY(Replicated)
+		float CoolDown=0;
+	UPROPERTY()
+		float MaxCoolDown = 3;
+	FTimerHandle CoolDownTimeHandle;
 public:
 	UFUNCTION(BlueprintCallable)
 		void SkillLeave();
 	
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable,Server,Reliable,WithValidation)
 		void UpdateCoolDown(float CoolDownTime);
 
 	UFUNCTION(BlueprintNativeEvent)
@@ -27,4 +31,13 @@ public:
 
 	UFUNCTION(BlueprintPure)
 		bool IsCoolingDown();
+
+	UFUNCTION(BlueprintPure)
+		float GetCoolDownRemain();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION(BlueprintCallable)
+		virtual float GetProgressValue_Implementation() override;
+
 };

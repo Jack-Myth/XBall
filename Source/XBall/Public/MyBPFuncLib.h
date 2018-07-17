@@ -39,4 +39,13 @@ public:
 		static UTexture2D* GetLocalTexture(const FString &_TexPath);
 	static TArray<FColor> uint8ToFColor(const TArray<uint8> origin);
 	static UTexture2D* TextureFromImage(const int32 SrcWidth, const int32 SrcHeight, const TArray<FColor>&SrcData, const bool UseAlpha);
+
+	UFUNCTION(BlueprintPure)
+		static UObject* LoadObjectNative(UObject* Outer, FString ObjectReference);
+
+	UFUNCTION(BlueprintPure)
+		static UClass* LoadClassNative(UObject* Outer, FString ClassPath);
+
+	UFUNCTION(BlueprintPure)
+		static UTexture2D* GetActionPreview(TSubclassOf<AActionBase> ActionBaseClass);
 };

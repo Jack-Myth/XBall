@@ -13,6 +13,7 @@
 #include "Engine/Texture2D.h"
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
+#include "ActionBase.h"
 
 /*void UMyBPFuncLib::SetMapGenerator(UMapGenerator* newMapGenerator)
 {
@@ -200,4 +201,19 @@ UTexture2D* UMyBPFuncLib::TextureFromImage(const int32 SrcWidth, const int32 Src
 	MyScreenshot->UpdateResource();
 
 	return MyScreenshot;
+}
+
+UObject* UMyBPFuncLib::LoadObjectNative(UObject* Outer, FString ObjectReference)
+{
+	return LoadObject<UObject>(Outer, *ObjectReference);
+}
+
+UClass* UMyBPFuncLib::LoadClassNative(UObject* Outer, FString ClassPath)
+{
+	return LoadClass<UObject>(Outer, *ClassPath);
+}
+
+UTexture2D* UMyBPFuncLib::GetActionPreview(TSubclassOf<AActionBase> ActionBaseClass)
+{
+	return ActionBaseClass->GetDefaultObject<AActionBase>()->GetActionIcon();
 }

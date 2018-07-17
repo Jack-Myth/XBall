@@ -26,6 +26,8 @@ class XBALL_API AXBallBase : public ACharacter
 	FVector GetCursorLocation(FVector* outSurfaceNormal=nullptr);
 	FVector TargetLocationCache;
 
+	FTimerHandle ScreenEffectDamage_TimerHandle;
+
 	UPROPERTY(Replicated)
 		TArray<AActionBase*> ActionList;
 public:
@@ -37,6 +39,11 @@ public:
 	AActionBase* AddActionToBar(int Index, AActionBase* Action);
 	
 	AActionBase* RemoveActionFromBar(int Index);
+	
+	inline TArray<AActionBase*> GetActionBarItems()
+	{
+		return ActionList;
+	}
 
 	UPROPERTY(BlueprintReadWrite,EditAnywhere)
 		UClass* PlayerTargetClass=ADefaultPlayerTarget::StaticClass();

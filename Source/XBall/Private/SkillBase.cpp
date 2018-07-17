@@ -4,6 +4,7 @@
 #include "XBallBase.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
+#include "UnrealNetwork.h"
 
 
 void ASkillBase::SkillLeave()
@@ -12,26 +13,31 @@ void ASkillBase::SkillLeave()
 }
 
 
-void ASkillBase::UpdateCoolDown(float CoolDownTime)
+bool ASkillBase::UpdateCoolDown_Validate(float CoolDownTime)
 {
-	if (CoolDownTime <= 0)
-	{
-		FTimerHandle timeHandleTmp;
-		GetWorld()->GetTimerManager().SetTimer(timeHandleTmp, [=]()
+	return true;
+}
+
+void ASkillBase::UpdateCoolDown_Implementation(float CoolDownTime)
+{
+	GetWorld()->GetTimerManager().ClearTimer(CoolDownTimeHandle);
+	CoolDown += CoolDownTime;
+	GetWorld()->GetTimerManager().SetTimer(CoolDownTimeHandle, [this]()
+		{
+			if (IsPendingKill())
+				return;
+			CoolDown -= 0.02f;
+			if (CoolDown <= 0)
 			{
-				if (IsPendingKill())
-					return;
-				CoolDown -= 0.02f;
-				if (CoolDown<=0)
-				{
-					CoolDown = 0;
-					FTimerHandle timerHandle = timeHandleTmp;
-					GetWorld()->GetTimerManager().ClearTimer(timerHandle);
-				}
-			},0.02f,true);
-	}
-	else
-		CoolDown += CoolDownTime;
+				CoolDown = 0;
+				GetWorld()->GetTimerManager().ClearTimer(CoolDownTimeHandle);
+			}
+		}, 0.02f, true);
+}
+
+void ASkillBase::SelectedWhileCD_Implementation()
+{
+	TwinkleIcon();
 }
 
 bool ASkillBase::IsCoolingDown()
@@ -39,7 +45,18 @@ bool ASkillBase::IsCoolingDown()
 	return CoolDown > 0;
 }
 
-void ASkillBase::SelectedWhileCD_Implementation()
+float ASkillBase::GetCoolDownRemain()
 {
-	//TwinkleIcon();
+	return CoolDown;
+}
+
+void ASkillBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ASkillBase, CoolDown);
+}
+
+float ASkillBase::GetProgressValue_Implementation()
+{
+	return FMath::Clamp<float>(1.f - CoolDown / MaxCoolDown, 0, 1);
 }

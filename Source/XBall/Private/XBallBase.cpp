@@ -88,7 +88,7 @@ AXBallBase::AXBallBase()
 	// Setup Take Any Damage Delegate
 	OnTakeAnyDamage.AddDynamic(this, &AXBallBase::AnyDamage_Internal);
 
-	ActionList.SetNum(8);
+	ActionList.SetNum(8,false);
 }
 
 AActionBase* AXBallBase::AddActionToBar(int Index, AActionBase* Action)
@@ -234,26 +234,18 @@ void AXBallBase::ShowScreenEffectDamaged_Rep_Implementation(int Damage, const AC
 
 void AXBallBase::ShowScreenEffectDamaged_Implementation(int Damage, const AController* Instigater, const class AActor* DamageCauser, const class UDamageType* DamageType)
 {
-	FTimerHandle tmpTimerHandle;
-	if (DamageBlendAlpha<=0)
-	{
-		DamageBlendAlpha += 0.3f;
-		GetWorld()->GetTimerManager().SetTimer(tmpTimerHandle,[=]()
+	GetWorld()->GetTimerManager().ClearTimer(ScreenEffectDamage_TimerHandle);
+	DamageBlendAlpha += 0.3f;
+	GetWorld()->GetTimerManager().SetTimer(ScreenEffectDamage_TimerHandle, [=]()
+		{
+			DamageBlendAlpha -= 0.02;
+			if (DamageBlendAlpha <= 0)
 			{
-				DamageBlendAlpha -= 0.02;
-				if (this->IsPendingKill())
-					return;
-				if (DamageBlendAlpha <= 0)
-				{
-					DamageBlendAlpha = 0;
-					FTimerHandle tmpTimerHandlex = tmpTimerHandle;
-					GetWorld()->GetTimerManager().ClearTimer(tmpTimerHandlex);
-				}
-				DamagedEffect->SetScalarParameterValue("Alpha", DamageBlendAlpha);
-			},0.02f,true,-1.f);
-	}
-	else
-		DamageBlendAlpha += 0.3f;
+				DamageBlendAlpha = 0;
+				GetWorld()->GetTimerManager().ClearTimer(ScreenEffectDamage_TimerHandle);
+			}
+			DamagedEffect->SetScalarParameterValue("Alpha", DamageBlendAlpha);
+		}, 0.02f, true, -1.f);
 }
 
 void AXBallBase::UpdateRotation_Implementation(FVector TargetLocation)
@@ -464,7 +456,13 @@ void AXBallBase::BeginSelectAction_Implementation(int ActionIndex, FVector Targe
 		return;
 	if(!(::IsValid(CurrentSkill))&&ActionList[ActionIndex]&&ActionList[ActionIndex]->IsA<ASkillBase>())
 	{
-		CurrentSkill = Cast<ASkillBase>(ActionList[ActionIndex]);
+		ASkillBase* tmpSkill = Cast<ASkillBase>(ActionList[ActionIndex]);
+		if (tmpSkill->IsCoolingDown())
+		{
+			tmpSkill->SelectedWhileCD();
+			return;
+		}
+		CurrentSkill = tmpSkill;
 		CurrentSkill->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 		CurrentSkill->SetActorRelativeLocation(FVector(0, -60, 0));
 		//CurrentSkill->AttachToComponent(SkillSocket, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
@@ -481,8 +479,9 @@ void AXBallBase::BeginSelectAction_Implementation(int ActionIndex, FVector Targe
 		CurrentWeapon = Cast<AWeaponBase>(ActionList[ActionIndex]);
 		CurrentWeapon->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 		CurrentWeapon->SetActorRelativeLocation(FVector(0, 60, 0));
+		CurrentWeapon->SetHolderPawn(this);
 		//CurrentWeapon->AttachToComponent(WeaponSocket, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-		CurrentWeapon->GetRootComponent()->SetVisibility(false, true);
+		//CurrentWeapon->GetRootComponent()->SetVisibility(false, true);
 		CurrentWeapon->BeginSelected(TargetLocation);
 	}
 }
@@ -496,17 +495,18 @@ void AXBallBase::EndSelectAction_Implementation(int ActionIndex, FVector TargetL
 {
 	if (ActionList[ActionIndex]&&ActionList[ActionIndex]->IsA<ASkillBase>()&&CurrentSkill)
 	{
+		if (CurrentSkill->IsCoolingDown())
+			return;
+		//CurrentSkill->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		//CurrentSkill->GetRootComponent()->SetVisibility(false, true);
 		CurrentSkill->EndSelected(TargetLocation);
-		CurrentSkill->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-		CurrentSkill->GetRootComponent()->SetVisibility(false, true);
-		//CurrentSkill shouldn't be set to nullptr, NotifySkillLeave() will do this job.
-		//CurrentSkill = nullptr;
+		CurrentSkill = nullptr;
 	}
 	else if (ActionList[ActionIndex] && ActionList[ActionIndex]->IsA<AWeaponBase>() &&CurrentWeapon)
 	{
+		//CurrentWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		//CurrentWeapon->GetRootComponent()->SetVisibility(false, true);
 		CurrentWeapon->EndSelected(TargetLocation);
-		CurrentWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-		CurrentWeapon->GetRootComponent()->SetVisibility(false, true);
 	}
 }
 
@@ -597,6 +597,7 @@ void AXBallBase::RefreshPlayerAppearance(int Team)
 			}
 		}
 		ActionList = GetXBallController()->GetTempActionBar();
+		ActionList.SetNum(8,false);
 		GetXBallController()->ClearTempActionBar();
 	}
 }

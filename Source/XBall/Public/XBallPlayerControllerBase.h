@@ -27,13 +27,12 @@ class XBALL_API AXBallPlayerControllerBase : public APlayerController
 	GENERATED_BODY()
 
 	UUserWidget* ActionInventoryWidget = nullptr;
+	UUserWidget* ActionBarWidget = nullptr;
 	UUserWidget* RankWidget = nullptr;
 
 	UPROPERTY(Replicated)
 		bool bIsInLobby=true;
 protected:
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-		TArray<TSubclassOf<AActionBase>> ActionClasses;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 		UClass* PlayerDefaultCharacter;
 	UPROPERTY(Replicated)
@@ -41,7 +40,8 @@ protected:
 	UPROPERTY(Replicated)
 		TArray<AActionBase*> TempActionBar;
 
-	int Coins=800;
+	UPROPERTY(BlueprintReadWrite,Replicated)
+		int Coins=800;
 
 	virtual void SetupInputComponent() override;
 
@@ -54,8 +54,6 @@ public:
 		int GetTeam();
 	UFUNCTION(BlueprintCallable,NetMulticast,Reliable,WithValidation)
 		void SetPlayerDefaultCharacter(TSubclassOf<AXBallBase> DefaultCharacter);
-	UFUNCTION(BlueprintCallable,NetMulticast,Reliable,WithValidation)
-		void SetActionClass(int Index, TSubclassOf<AActionBase> NewActionClass);
 	
 	inline TArray<AActionBase*> GetTempActionBar()
 	{
@@ -71,16 +69,16 @@ public:
 	{
 		return PlayerDefaultCharacter;
 	}
-	inline TArray<TSubclassOf<AActionBase>> GetActionClasses()
+
+	UFUNCTION(BlueprintPure)
+		inline TArray<AActionBase*> GetActionBarItems()
 	{
-		return ActionClasses;
+		AXBallBase* XballBase = Cast<AXBallBase>(GetCharacter());
+		return XballBase ? XballBase->GetActionBarItems() : TempActionBar;
 	}
-	inline TSubclassOf<AActionBase> GetActionClass(int Index)
-	{
-		if (Index < 0 || Index >= ActionClasses.Num())
-			return nullptr;
-		return ActionClasses[Index];
-	}
+
+	UFUNCTION(BlueprintPure)
+		class UUserWidget* FindActionBarItemWidgetFor(AActionBase* ActionInstance);
 
 	/*UFUNCTION(BlueprintCallable,Client, Reliable, WithValidation)
 		void BuildMap(UClass* MapGenerator, int MaxEngth, int MaxWidth, int MaxHeight,int32 NoiseSeed);*/
@@ -132,6 +130,9 @@ public:
 	UFUNCTION(BlueprintCallable, Server, Reliable, WithValidation)
 		void MoveActionToInventory(int ActionBarIndex);
 
+	UFUNCTION(BlueprintCallable, Server, Reliable, WithValidation)
+		void SwapActionBarItem(int IndexA,int IndexB);
+
 	UFUNCTION(BlueprintCallable, Server, Reliable,WithValidation)
 		void Buy(TSubclassOf<AActionBase> ActionClass);
 
@@ -151,4 +152,7 @@ public:
 		void OpenRank();
 	UFUNCTION()
 		void CloseRank();
+
+	UFUNCTION(BlueprintCallable,Client,Reliable)
+		void InitGameUI();
 };
