@@ -217,3 +217,10 @@ UTexture2D* UMyBPFuncLib::GetActionPreview(TSubclassOf<AActionBase> ActionBaseCl
 {
 	return ActionBaseClass->GetDefaultObject<AActionBase>()->GetActionIcon();
 }
+
+void UMyBPFuncLib::GetActionInfo(TSubclassOf<AActionBase> ActionClass, FString& Title, FString& Intro, int& Price)
+{
+	AActionBase* AcitonClassDefaultObj = ActionClass->GetDefaultObject<AActionBase>();
+	Price = AcitonClassDefaultObj->GetPrice();
+	AcitonClassDefaultObj->GetActionInfo(Title, Intro);
+}

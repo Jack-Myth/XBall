@@ -27,7 +27,7 @@ class XBALL_API AXBallPlayerControllerBase : public APlayerController
 	GENERATED_BODY()
 
 	UUserWidget* ActionInventoryWidget = nullptr;
-	UUserWidget* ActionBarWidget = nullptr;
+	UUserWidget* MainUIWidget = nullptr;
 	UUserWidget* RankWidget = nullptr;
 
 	UPROPERTY(Replicated)

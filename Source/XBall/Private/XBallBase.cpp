@@ -39,6 +39,54 @@ FVector AXBallBase::GetCursorLocation(FVector* outSurfaceNormal)
 	return FVector(0, 0, 0);
 }
 
+void AXBallBase::Sprint_Implementation(FVector Dir)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Green, "Try Sprint");
+	if (IsSprintable())
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Green, "Sprint!");
+		Dir.Normalize();
+		if (GetCharacterMovement()->IsFalling())
+		{
+			LaunchCharacter(Dir * 2000, true, false);
+		}
+		else
+		{
+			LaunchCharacter(Dir * 5000, true, false);
+		}
+		bSprintable = false;
+		SprintCoolDown = 5.f;
+		GetWorld()->GetTimerManager().SetTimer(SprintCoolDownTimerHandle, [this]()
+			{
+				SprintCoolDown -= 0.02f;
+				if (SprintCoolDown<=0)
+				{
+					SprintCoolDown = 0;
+					bSprintable = true;
+					GetWorld()->GetTimerManager().ClearTimer(SprintCoolDownTimerHandle);
+				}
+			}, 0.02f, true);
+	}
+}
+
+bool AXBallBase::Sprint_Validate(FVector Dir)
+{
+	return true;
+}
+
+void AXBallBase::DoReload_Implementation()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->Reload();
+	}
+}
+
+bool AXBallBase::DoReload_Validate()
+{
+	return true;
+}
+
 // Sets default values
 AXBallBase::AXBallBase()
 {
@@ -142,17 +190,6 @@ void AXBallBase::UpdatePlayerTarget()
 	IScenePlayerTarget::Execute_OnUpdateTargetPosition(PlayerTarget, CursorPos,SurfaceNormal);
 }
 
-void AXBallBase::SetHealth(int NewHealth)
-{
-	Health = NewHealth;
-	CheckShouldDie();
-}
-
-int AXBallBase::GetHealth()
-{
-	return Health;
-}
-
 
 void AXBallBase::NotifySkillLeave()
 {
@@ -186,6 +223,10 @@ void AXBallBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AXBallBase, ActionList);
 	DOREPLIFETIME(AXBallBase, Team);
+	DOREPLIFETIME(AXBallBase, Health);
+	DOREPLIFETIME(AXBallBase, CurrentWeapon);
+	DOREPLIFETIME(AXBallBase, CurrentSkill);
+	DOREPLIFETIME(AXBallBase, bSprintable);
 }
 
 void AXBallBase::CheckShouldDie_Implementation()
@@ -302,11 +343,13 @@ void AXBallBase::AnyDamage_Internal(AActor* DamagedActor, float Damage, const cl
 void AXBallBase::Input_MoveForward(float AxisValue)
 {
 	AddMovementInput(FVector(1,0,0), AxisValue);
+	MovementDir.X = AxisValue;
 }
 
 void AXBallBase::Input_MoveRight(float AxisValue)
 {
 	AddMovementInput(FVector(0, 1, 0), AxisValue);
+	MovementDir.Y = AxisValue;
 }
 
 void AXBallBase::Input_MouseX(float AxisValue)
@@ -326,6 +369,16 @@ void AXBallBase::Input_MouseX(float AxisValue)
 
 void AXBallBase::Input_MouseY(float AxisValue)
 {
+}
+
+void AXBallBase::Input_Reload()
+{
+	DoReload();
+}
+
+void AXBallBase::Input_Sprint()
+{
+	Sprint(MovementDir);
 }
 
 void AXBallBase::Input_JumpStart()
@@ -535,6 +588,8 @@ void AXBallBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 	PlayerInputComponent->BindAction("Jump", EInputEvent::IE_Released, this, &AXBallBase::Input_JumpEnd);
 	PlayerInputComponent->BindAction("Fire", EInputEvent::IE_Pressed, this, &AXBallBase::Input_BeginFire);
 	PlayerInputComponent->BindAction("Fire", EInputEvent::IE_Released, this, &AXBallBase::Input_EndFire);
+	PlayerInputComponent->BindAction("Reload", EInputEvent::IE_Pressed, this, &AXBallBase::Input_Reload);
+	PlayerInputComponent->BindAction("Sprint", EInputEvent::IE_Pressed, this, &AXBallBase::Input_Sprint);
 	PlayerInputComponent->BindAction("MainAction", EInputEvent::IE_Pressed, this, &AXBallBase::Input_BeginMainAction);
 	PlayerInputComponent->BindAction("MainAction", EInputEvent::IE_Released, this, &AXBallBase::Input_EndMainAction);
 	PlayerInputComponent->BindAction("Action1", EInputEvent::IE_Pressed, this, &AXBallBase::Input_BeginAction1);

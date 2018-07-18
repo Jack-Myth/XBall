@@ -14,23 +14,42 @@ class XBALL_API AXBallBase : public ACharacter
 {
 	GENERATED_BODY()
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 		class AWeaponBase* CurrentWeapon = nullptr;
-	UPROPERTY()
+	UPROPERTY(Replicated)
 		class ASkillBase* CurrentSkill = nullptr;
 	//class USceneComponent* SkillSocket=nullptr, *WeaponSocket = nullptr;
 	UStaticMeshComponent* CoreBallMesh=nullptr;
 	class UCameraComponent* PlayerCamera = nullptr;
-	int Health=100;
+	UPROPERTY(Replicated)
+		int Health=100;
 	UObject* PlayerTarget=nullptr;
 	FVector GetCursorLocation(FVector* outSurfaceNormal=nullptr);
 	FVector TargetLocationCache;
-
+	FVector MovementDir;
 	FTimerHandle ScreenEffectDamage_TimerHandle;
 
 	UPROPERTY(Replicated)
 		TArray<AActionBase*> ActionList;
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		void Sprint(FVector Dir);
+
+	float SprintCoolDown;
+	FTimerHandle SprintCoolDownTimerHandle;
+
+	UPROPERTY(Replicated)
+		bool bSprintable=true;
 public:
+	UFUNCTION(BlueprintPure)
+	inline bool IsSprintable()
+	{
+		return bSprintable;
+	}
+
+	UFUNCTION(BlueprintCallable, Server, Reliable, WithValidation)
+		void DoReload();
+
 	UPROPERTY(BlueprintReadWrite,EditAnywhere)
 		class USpringArmComponent* CameraArm = nullptr;
 	// Sets default values for this character's properties
@@ -49,10 +68,33 @@ public:
 		UClass* PlayerTargetClass=ADefaultPlayerTarget::StaticClass();
 	UFUNCTION(BlueprintCallable)
 		void UpdatePlayerTarget();
-	void SetHealth(int NewHealth);
-	int GetHealth();
 
+	UFUNCTION(BlueprintPure)
+	inline AWeaponBase* GetCurrentWeapon()
+	{
+		return CurrentWeapon;
+	}
+
+	UFUNCTION(BlueprintPure)
+	inline ASkillBase* GetCurrentSkill()
+	{
+		return CurrentSkill;
+	}
+
+	// It's Not a RPC Function, But don't call It on Client.
 	UFUNCTION(BlueprintCallable)
+	void SetHealth(int NewHealth)
+	{
+		Health = NewHealth;
+		CheckShouldDie();
+	}
+
+	UFUNCTION(BlueprintPure)
+	inline int GetHealth()
+	{
+		return Health;
+	}
+
 		void NotifySkillLeave();
 
 	UPROPERTY(ReplicatedUsing="Rep_Team")
@@ -139,6 +181,10 @@ protected:
 		void Input_MouseX(float AxisValue);
 	UFUNCTION()
 		void Input_MouseY(float AxisValue);
+	UFUNCTION()
+		void Input_Reload();
+	UFUNCTION()
+		void Input_Sprint();
 	UFUNCTION()
 		void Input_JumpStart();
 	UFUNCTION()

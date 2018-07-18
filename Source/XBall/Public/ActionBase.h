@@ -27,6 +27,9 @@ protected:
 		int Price = 0;
 	UPROPERTY(EditDefaultsOnly)
 		UTexture2D* ActionIcon;
+
+	virtual void BeginPlay() override;
+
 public:
 	AActionBase();
 	/*UFUNCTION(BlueprintCallable,Server,Reliable,WithValidation)
@@ -71,4 +74,7 @@ public:
 		float GetProgressValue();
 	UFUNCTION(BlueprintCallable)
 		void TwinkleIcon();
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintPure)
+		void GetActionInfo(FString& Title, FString& Intro);
 };

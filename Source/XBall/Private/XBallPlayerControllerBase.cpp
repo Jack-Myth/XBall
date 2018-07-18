@@ -62,7 +62,7 @@ void AXBallPlayerControllerBase::SetTeam_Implementation(int NewTeam)
 
 class UUserWidget* AXBallPlayerControllerBase::FindActionBarItemWidgetFor(AActionBase* ActionInstance)
 {
-	if (ActionBarWidget)
+	if (MainUIWidget)
 	{
 		int index;
 		AXBallBase* XballCharacter = Cast<AXBallBase>(GetCharacter());
@@ -77,10 +77,10 @@ class UUserWidget* AXBallPlayerControllerBase::FindActionBarItemWidgetFor(AActio
 		if (index != INDEX_NONE)
 		{
 			// Use Unreal Reflection System to Call Blueprint Function And Get Result.
-			UFunction* FAIW_Function = ActionBarWidget->FindFunction("FindActionItemWidget");
+			UFunction* FAIW_Function = MainUIWidget->FindFunction("FindActionItemWidget");
 			uint8* Buffer= (uint8*)FMemory::Malloc(FAIW_Function->ParmsSize);
 			*(int*)Buffer = index;
-			ActionBarWidget->ProcessEvent(FAIW_Function,Buffer);
+			MainUIWidget->ProcessEvent(FAIW_Function,Buffer);
 			UProperty* ReturnProperty=nullptr;
 			for (TFieldIterator<UProperty> PropIt(FAIW_Function, EFieldIteratorFlags::ExcludeSuper); PropIt; ++PropIt)
 			{
@@ -194,7 +194,7 @@ bool AXBallPlayerControllerBase::Buy_Internal(TSubclassOf<AActionBase> ActionCla
 		FActorSpawnParameters tmpSpawnParamters;
 		tmpSpawnParamters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		AActionBase* ActionInstance = GetWorld()->SpawnActor<AActionBase>(ActionClass, tmpSpawnParamters);
-		ActionInstance->GetRootComponent()->SetVisibility(false, true);
+		//ActionInstance->GetRootComponent()->SetVisibility(false, true);
 		ActionInventory.Add(ActionInstance);
 		return true;
 	}
@@ -285,12 +285,11 @@ void AXBallPlayerControllerBase::CloseRank()
 
 void AXBallPlayerControllerBase::InitGameUI_Implementation()
 {
-	//TSubclassOf<UUserWidget> ActionBarClass= LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/ActionBar'"));
-	TSubclassOf<UUserWidget> ActionBarClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/ActionBar.ActionBar_C'"));
-	if (ActionBarClass)	
+	TSubclassOf<UUserWidget> MainUIClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/GameUI.GameUI_C'"));
+	if (MainUIClass)	
 	{
-		ActionBarWidget = UUserWidget::CreateWidgetOfClass(ActionBarClass, nullptr, nullptr, this);
-		ActionBarWidget->AddToViewport(1);
+		MainUIWidget = UUserWidget::CreateWidgetOfClass(MainUIClass, nullptr, nullptr, this);
+		MainUIWidget->AddToViewport(1);
 	}
 	else
 	{
@@ -331,7 +330,7 @@ void AXBallPlayerControllerBase::ShowWarning_Implementation(const FString& Title
 		} tmpPatamter;
 		tmpPatamter.Title = Title;
 		tmpPatamter.Message = Message;
-		DialogInstance->ProcessEvent(DialogInstance->FindFunction("SetDialogInfoAsOK"), &tmpPatamter);
+		DialogInstance->ProcessEvent(DialogInstance->FindFunction("SetDialogInfoAsWarning"), &tmpPatamter);
 		DialogInstance->AddToViewport(100);
 	}
 	else
@@ -351,7 +350,7 @@ void AXBallPlayerControllerBase::ShowMessage_Implementation(const FString& Title
 		} tmpPatamter;
 		tmpPatamter.Title = Title;
 		tmpPatamter.Message = Message;
-		DialogInstance->ProcessEvent(DialogInstance->FindFunction("SetDialogInfoAsOK"), &tmpPatamter);
+		DialogInstance->ProcessEvent(DialogInstance->FindFunction("SetDialogInfoAsMessage"), &tmpPatamter);
 		DialogInstance->AddToViewport(100);
 	}
 	else

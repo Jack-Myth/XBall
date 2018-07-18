@@ -16,6 +16,29 @@ class XBALL_API AWeaponBase : public AActionBase
 
 public: 
 
+	UPROPERTY(BlueprintReadOnly,EditDefaultsOnly)
+		int MaxAmmo=1;
+
+	UPROPERTY(BlueprintReadWrite,Replicated)
+		int CurrentAmmo;
+
+	UPROPERTY(EditDefaultsOnly)
+		float ReloadTime=3;
+
+	UPROPERTY(Replicated)
+		float ReloadTimeRemain;
+	FTimerHandle ReloadTimerHandle;
+
+	// Reload Weapon,It Will Set CurrentAmmo To MaxAmmo;
+	UFUNCTION(BlueprintCallable)
+		void Reload();
+
+	UFUNCTION(BlueprintPure)
+		inline bool IsReloading()
+	{
+		return ReloadTimeRemain > 0;
+	}
+
 	UFUNCTION(BlueprintImplementableEvent)
 		void BeginFire(FVector TargetLocation);
 
@@ -24,4 +47,13 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 		void OnSwitched();
+
+	UFUNCTION(BlueprintPure)
+		virtual float GetProgressValue_Implementation() override;
+public:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+protected:
+	virtual void BeginPlay() override;
+
 };

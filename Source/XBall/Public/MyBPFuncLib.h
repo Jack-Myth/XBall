@@ -48,4 +48,7 @@ public:
 
 	UFUNCTION(BlueprintPure)
 		static UTexture2D* GetActionPreview(TSubclassOf<AActionBase> ActionBaseClass);
+
+	UFUNCTION(BlueprintPure)
+		static void GetActionInfo(TSubclassOf<AActionBase> ActionClass, FString& Title, FString& Intro, int& Price);
 };

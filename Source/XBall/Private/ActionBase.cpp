@@ -7,6 +7,13 @@
 
 
 
+void AActionBase::BeginPlay()
+{
+	Super::BeginPlay();
+	if (GetRootComponent())
+		GetRootComponent()->SetVisibility(false, true);
+}
+
 /*void UActionComponentBase::BeginReady_Implementation(FVector TargetLocation)
 {
 	BeginReady_Func(TargetLocation);
