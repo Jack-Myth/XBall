@@ -255,7 +255,7 @@ void AXBallPlayerControllerBase::ToggleActionInventory()
 			if (InventoryUMGClass)
 			{
 				UUserWidget* InventoryWidget = UUserWidget::CreateWidgetOfClass(InventoryUMGClass, nullptr, nullptr, this);
-				InventoryWidget->AddToViewport();
+				InventoryWidget->AddToViewport(1);
 				ActionInventoryWidget = InventoryWidget;
 				bShowMouseCursor = true;
 				UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(this, ActionInventoryWidget, EMouseLockMode::LockOnCapture, false);
@@ -275,12 +275,53 @@ void AXBallPlayerControllerBase::ToggleActionInventory()
 
 void AXBallPlayerControllerBase::OpenRank()
 {
-
+	if (RankWidget||IsInLobby())
+		return;
+	TSubclassOf<UUserWidget> RankClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/Rank.Rank_C'"));
+	if (RankClass)
+	{
+		RankWidget = UUserWidget::CreateWidgetOfClass(RankClass, nullptr, nullptr, this);
+		RankWidget->AddToViewport(0);
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "Load RankUMG Class Failed");
+	}
 }
 
 void AXBallPlayerControllerBase::CloseRank()
 {
+	if (RankWidget)
+	{
+		RankWidget->RemoveFromParent();
+		RankWidget = nullptr;
+	}
+}
 
+void AXBallPlayerControllerBase::ShowResultSync(int WinTeam)
+{
+
+}
+
+void AXBallPlayerControllerBase::CloseWaitingRespawn_Implementation()
+{
+	if (WaitRespawn)
+	{
+		WaitRespawn->RemoveFromParent();
+		WaitRespawn = nullptr;
+	}
+}
+
+void AXBallPlayerControllerBase::ShowWaitingRespawn_Implementation()
+{
+	if (WaitRespawn)
+		return;
+	TSubclassOf<UUserWidget> WaitRespawnClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/WaitRespawn.WaitRespawn_C'"));
+	if (WaitRespawnClass)
+	{
+		WaitRespawn = UUserWidget::CreateWidgetOfClass(WaitRespawnClass, nullptr, nullptr, this);
+		WaitRespawn->AddToViewport(-1);
+	}
 }
 
 void AXBallPlayerControllerBase::InitGameUI_Implementation()

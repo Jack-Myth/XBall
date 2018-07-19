@@ -40,6 +40,7 @@ void AXBallGameModeBase::Tick(float DeltaSeconds)
 		if (it->TimeRemain<=0)
 		{
 			HandleStartingNewPlayer(it->TargetController);
+			it->TargetController->CloseWaitingRespawn();
 			//StartNewPlayer(it->TargetController);
 			it.RemoveCurrent();
 		}
@@ -77,6 +78,7 @@ void AXBallGameModeBase::PrepareReSpawn(AXBallPlayerControllerBase* TargetContro
 		tmpInfo.TargetController = TargetController;
 		tmpInfo.TimeRemain = 5;
 		PlayerRespawnQueue.Add(tmpInfo);
+		TargetController->ShowWaitingRespawn();
 	}
 	else
 	{
@@ -94,6 +96,44 @@ void AXBallGameModeBase::RestartPlayerAtTransform(AController* NewPlayer, const 
 		tmpTransform.SetLocation(FVector(FMath::RandRange(-500, 500), FMath::RandRange(-500, 500), FMath::RandRange(-500, 500)));
 	}
 	Super::RestartPlayerAtTransform(NewPlayer, tmpTransform);
+}
+
+void AXBallGameModeBase::CheckScore()
+{
+	TArray<AActor*> XBallStates;
+	UGameplayStatics::GetAllActorsOfClass(this, AXBallPlayerState::StaticClass(), XBallStates);
+	if (XBallStates.Num())
+	{
+		if (IsTeamGame())
+		{
+			TArray<int> TeamsScore;
+			TeamsScore.SetNum(5, false);
+			for (AActor*& XBallStateActor:XBallStates)
+			{
+				AXBallPlayerState* XBallState = Cast<AXBallPlayerState>(XBallStateActor);
+				if (XBallState->Team>0&&XBallState->Team<5)
+				{
+					TeamsScore[XBallState->Team] += XBallState->KillScore;
+				}
+			}
+			for (int i=0;i<TeamsScore.Num();i++)
+			{
+				if (TeamsScore[i]>=TargetScore)
+				{
+					RiseGameOver(i);
+					return;
+				}
+			}
+		}
+	}
+}
+
+void AXBallGameModeBase::RiseGameOver(int WinTeam)
+{
+	if (IsTeamGame())
+	{
+		
+	}
 }
 
 void AXBallGameModeBase::HandleMatchHasStarted()

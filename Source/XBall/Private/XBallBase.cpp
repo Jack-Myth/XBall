@@ -229,11 +229,11 @@ void AXBallBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	DOREPLIFETIME(AXBallBase, bSprintable);
 }
 
-void AXBallBase::CheckShouldDie_Implementation()
+void AXBallBase::CheckShouldDie_Implementation(AController* InstigatedBy)
 {
 	if (Health <= 0)
 	{
-		DieDefault();
+		DieDefault(InstigatedBy);
 	}
 }
 
@@ -246,12 +246,24 @@ void AXBallBase::NotifyRespawn()
 	}
 }
 
-void AXBallBase::DieDefault_Implementation()
+void AXBallBase::DieDefault_Implementation(AController* InstigatedBy)
 {
 	//Only Server Can Respawn Player Character.
-	if(HasAuthority())
+	if (HasAuthority())
+	{
 		NotifyRespawn();
-
+		GetXBallController()->GetXBallPlayerState()->DeadCount++;
+		AXBallPlayerControllerBase* XBallController = Cast<AXBallPlayerControllerBase>(InstigatedBy);
+		if (XBallController)
+		{
+			XBallController->GetXBallPlayerState()->KillScore++;
+		}
+		AXBallGameModeBase* XBallGameMode= Cast<AXBallGameModeBase>(UGameplayStatics::GetGameMode(this));
+		if (XBallGameMode)
+		{
+			
+		}
+	}
 	//Should Spawn an Emitter'
 	this->Destroy();
 }
@@ -337,7 +349,7 @@ void AXBallBase::AnyDamage_Internal(AActor* DamagedActor, float Damage, const cl
 		Health -= Damage;
 	}
 	ShowScreenEffectDamaged_Rep((int)Damage, InstigatedBy, DamageCauser, DamageType);
-	CheckShouldDie();
+	CheckShouldDie(InstigatedBy);
 }
 
 void AXBallBase::Input_MoveForward(float AxisValue)
@@ -519,7 +531,7 @@ void AXBallBase::BeginSelectAction_Implementation(int ActionIndex, FVector Targe
 		CurrentSkill->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 		CurrentSkill->SetActorRelativeLocation(FVector(0, -60, 0));
 		//CurrentSkill->AttachToComponent(SkillSocket, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-		CurrentSkill->GetRootComponent()->SetVisibility(true, true);
+		//CurrentSkill->GetRootComponent()->SetVisibility(true, true);
 		CurrentSkill->SetHolderPawn(this);
 		CurrentSkill->BeginSelected(TargetLocation);
 	}
@@ -622,17 +634,17 @@ void AXBallBase::RefreshPlayerAppearance(int Team)
 		case 0: //默认
 			MatInterface=LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/XBall/Materials/TeamMat/TeamColorBase.TeamColorBase'"));
 			break;
-		case 1: //蓝队
+		case 1: //红队
+			MatInterface = LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/XBall/Materials/TeamMat/TeamColor_Red.TeamColor_Red'"));
+			break;
+		case 2: //绿队
+			MatInterface = LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/XBall/Materials/TeamMat/TeamColor_Green.TeamColor_Green'"));
+			break;
+		case 3: //蓝队
 			MatInterface= LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/XBall/Materials/TeamMat/TeamColor_Blue.TeamColor_Blue'"));
 			break;
-		case 2: //红队
-			MatInterface=LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/XBall/Materials/TeamMat/TeamColor_Red.TeamColor_Red'"));
-			break;
-		case 3: //黄队
+		case 4: //黄队
 			MatInterface= LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/XBall/Materials/TeamMat/TeamColor_Yellow.TeamColor_Yellow'"));
-			break;
-		case 4: //绿队
-			MatInterface= LoadObject<UMaterialInstance>(nullptr, TEXT("MaterialInstanceConstant'/Game/XBall/Materials/TeamMat/TeamColor_Green.TeamColor_Green'"));
 			break;
 		default:
 			MatInterface= LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/XBall/Materials/TeamMat/TeamColorBase.TeamColorBase'"));

@@ -16,6 +16,7 @@ class XBALL_API AXBallGameModeBase : public AGameMode
 
 	int32 MapSeed;
 	bool bIsTeamGame=false;
+	int TargetScore=30;
 
 	struct FPlayerRespawnInfo 
 	{
@@ -50,6 +51,12 @@ public:
 
 
 	virtual void RestartPlayerAtTransform(AController* NewPlayer, const FTransform& SpawnTransform) override;
+
+	UFUNCTION(BlueprintCallable)
+		void CheckScore();
+
+	UFUNCTION(BlueprintCallable)
+		void RiseGameOver(int WinTeam);
 
 protected:
 	virtual void HandleMatchHasStarted() override;

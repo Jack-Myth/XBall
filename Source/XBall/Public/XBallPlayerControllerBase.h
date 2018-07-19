@@ -29,6 +29,7 @@ class XBALL_API AXBallPlayerControllerBase : public APlayerController
 	UUserWidget* ActionInventoryWidget = nullptr;
 	UUserWidget* MainUIWidget = nullptr;
 	UUserWidget* RankWidget = nullptr;
+	UUserWidget* WaitRespawn = nullptr;
 
 	UPROPERTY(Replicated)
 		bool bIsInLobby=true;
@@ -155,4 +156,15 @@ public:
 
 	UFUNCTION(BlueprintCallable,Client,Reliable)
 		void InitGameUI();
+
+	UFUNCTION(BlueprintCallable, Client, Reliable)
+		void ShowWaitingRespawn();
+	UFUNCTION(BlueprintCallable, Client, Reliable)
+		void CloseWaitingRespawn();
+
+
+	//Show Game Result
+	//If WinTeam is less than 0(-1),It means the game isn't Team Play Game.
+	UFUNCTION(BlueprintCallable)
+		void ShowResultSync(int WinTeam);
 };

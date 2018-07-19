@@ -86,7 +86,7 @@ public:
 	void SetHealth(int NewHealth)
 	{
 		Health = NewHealth;
-		CheckShouldDie();
+		CheckShouldDie(nullptr);
 	}
 
 	UFUNCTION(BlueprintPure)
@@ -114,8 +114,9 @@ protected:
 	float DamageBlendAlpha = 0.f;
 
 	//Check If Player Should Die
+	//InstigatedBy can be nullptr, It means no one cause Damage.
 	UFUNCTION(BlueprintNativeEvent)
-	void CheckShouldDie();//On Server
+	void CheckShouldDie(AController* InstigatedBy=nullptr);//On Server
 
 	//Notify GameMode To Respawn Player Pawn
 	UFUNCTION(BlueprintCallable)
@@ -124,8 +125,9 @@ protected:
 
 	//On Server
 	//Some Dead Logic,Default Only Spawn an Particle Emitter
+	//InstigatedBy can be nullptr, It means no one will get score when this Player died.
 	UFUNCTION(BlueprintCallable,NetMulticast,Reliable)
-	void DieDefault();
+	void DieDefault(AController* InstigatedBy=nullptr);
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
