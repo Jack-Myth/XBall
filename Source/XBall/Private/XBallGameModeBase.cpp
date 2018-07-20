@@ -100,6 +100,8 @@ void AXBallGameModeBase::RestartPlayerAtTransform(AController* NewPlayer, const 
 
 void AXBallGameModeBase::CheckScore()
 {
+	if (GetMatchState() == "Ended")
+		return;
 	TArray<AActor*> XBallStates;
 	UGameplayStatics::GetAllActorsOfClass(this, AXBallPlayerState::StaticClass(), XBallStates);
 	if (XBallStates.Num())
@@ -120,7 +122,20 @@ void AXBallGameModeBase::CheckScore()
 			{
 				if (TeamsScore[i]>=TargetScore)
 				{
+					SetMatchState("Ended");
 					RiseGameOver(i);
+					return;
+				}
+			}
+		}
+		else
+		{
+			for (AActor*& XBallStateActor : XBallStates)
+			{
+				AXBallPlayerState* XBallState = Cast<AXBallPlayerState>(XBallStateActor);
+				if (XBallState->KillScore>=TargetScore)
+				{
+					RiseGameOver(0);
 					return;
 				}
 			}
@@ -130,9 +145,12 @@ void AXBallGameModeBase::CheckScore()
 
 void AXBallGameModeBase::RiseGameOver(int WinTeam)
 {
-	if (IsTeamGame())
+	TArray<AActor*> XBallControllers;
+	UGameplayStatics::GetAllActorsOfClass(this, AXBallPlayerControllerBase::StaticClass(), XBallControllers);
+	for (AActor*& XBallController:XBallControllers)
 	{
-		
+		Cast<AXBallPlayerControllerBase>(XBallController)->ShowResultSync(WinTeam);
+		Cast<AXBallPlayerControllerBase>(XBallController)->SetIsInLobby(true);
 	}
 }
 

@@ -261,7 +261,7 @@ void AXBallBase::DieDefault_Implementation(AController* InstigatedBy)
 		AXBallGameModeBase* XBallGameMode= Cast<AXBallGameModeBase>(UGameplayStatics::GetGameMode(this));
 		if (XBallGameMode)
 		{
-			
+			XBallGameMode->CheckScore();
 		}
 	}
 	//Should Spawn an Emitter'
@@ -542,7 +542,7 @@ void AXBallBase::BeginSelectAction_Implementation(int ActionIndex, FVector Targe
 			CurrentWeapon->OnSwitched();
 		}
 		CurrentWeapon = Cast<AWeaponBase>(ActionList[ActionIndex]);
-		CurrentWeapon->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+		CurrentWeapon->AttachToActor(this, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 		CurrentWeapon->SetActorRelativeLocation(FVector(0, 60, 0));
 		CurrentWeapon->SetHolderPawn(this);
 		//CurrentWeapon->AttachToComponent(WeaponSocket, FAttachmentTransformRules::SnapToTargetNotIncludingScale);

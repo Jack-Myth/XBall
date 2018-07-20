@@ -298,9 +298,39 @@ void AXBallPlayerControllerBase::CloseRank()
 	}
 }
 
-void AXBallPlayerControllerBase::ShowResultSync(int WinTeam)
+void AXBallPlayerControllerBase::ShowResultSync_Implementation(int WinTeam)
 {
-
+	TSubclassOf<UUserWidget> ResultClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/GameResult.GameResult_C'"));
+	if (ResultClass)
+	{
+		UUserWidget* ResultInstance=UUserWidget::CreateWidgetOfClass(ResultClass, nullptr, nullptr, this);
+		if (!ResultInstance)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "Error,Create ResultWidget Failed.");
+			return;
+		}
+		FString WinMsg;
+		switch (WinTeam)
+		{
+			case 1:
+				WinMsg = "Red Team Win";
+				break;
+			case 2:
+				WinMsg = "Green Team Win";
+				break;
+			case 3:
+				WinMsg = "Blue Team Win";
+				break;
+			case 4:
+				WinMsg = "Yellow Team Win";
+				break;
+			default:
+				WinMsg = "Nice Game";
+				break;
+		}
+		ResultInstance->ProcessEvent(ResultInstance->FindFunction("SetWinInfo"), &WinMsg);
+		ResultInstance->AddToViewport(2);
+	}
 }
 
 void AXBallPlayerControllerBase::CloseWaitingRespawn_Implementation()

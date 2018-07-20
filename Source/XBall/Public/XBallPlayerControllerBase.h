@@ -165,6 +165,6 @@ public:
 
 	//Show Game Result
 	//If WinTeam is less than 0(-1),It means the game isn't Team Play Game.
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable,Client,Reliable)
 		void ShowResultSync(int WinTeam);
 };

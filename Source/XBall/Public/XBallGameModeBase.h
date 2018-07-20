@@ -16,7 +16,7 @@ class XBALL_API AXBallGameModeBase : public AGameMode
 
 	int32 MapSeed;
 	bool bIsTeamGame=false;
-	int TargetScore=30;
+	int TargetScore=5;
 
 	struct FPlayerRespawnInfo 
 	{
