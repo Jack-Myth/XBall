@@ -14,6 +14,9 @@
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
 #include "ActionBase.h"
+#include "OnlineSubsystem.h"
+#include "OnlineSessionInterface.h"
+#include "OnlineSessionSettings.h"
 
 /*void UMyBPFuncLib::SetMapGenerator(UMapGenerator* newMapGenerator)
 {
@@ -223,4 +226,34 @@ void UMyBPFuncLib::GetActionInfo(TSubclassOf<AActionBase> ActionClass, FString& 
 	AActionBase* AcitonClassDefaultObj = ActionClass->GetDefaultObject<AActionBase>();
 	Price = AcitonClassDefaultObj->GetPrice();
 	AcitonClassDefaultObj->GetActionInfo(Title, Intro);
+}
+
+bool UMyBPFuncLib::CreateOnlineSessionWithName(UObject* WorldContextObj, class APlayerController* HostedController, int PublicConnections, bool UsingLAN, FName ServerName, FOnCreateSessionFinished OnCreateSessionFinished)
+{
+	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
+	if (OnlineSubsystem)
+	{
+		auto Sessions = OnlineSubsystem->GetSessionInterface();
+		if (Sessions.IsValid())
+		{
+			Sessions->AddOnCreateSessionCompleteDelegate_Handle(FOnCreateSessionCompleteDelegate::CreateLambda([OnCreateSessionFinished](FName SessionName, bool IsSucceed)
+				{
+					OnCreateSessionFinished.ExecuteIfBound(SessionName, IsSucceed);
+				}));
+
+			FOnlineSessionSettings Settings;
+			Settings.NumPublicConnections = PublicConnections;
+			Settings.bShouldAdvertise = true;
+			Settings.bAllowJoinInProgress = true;
+			Settings.bIsLANMatch = UsingLAN;
+			Settings.bUsesPresence = true;
+			Settings.bAllowJoinViaPresence = true;
+
+			Sessions->CreateSession(HostedController->NetPlayerIndex, ServerName, Settings);
+
+			// OnCreateCompleted will get called, nothing more to do now
+			return true;
+		}
+	}
+		return false;
 }

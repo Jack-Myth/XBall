@@ -16,8 +16,17 @@ class XBALL_API AXBallPlayerState : public APlayerState
 
 	TMap<FString, UTexture2D*> CustomTextures;
 	TMap<FString, TArray<uint8>> CustomTexturesData;
-
+	UPROPERTY(Replicated)
+		bool Lobby_IsReady = false;
 public:
+	UFUNCTION(BlueprintCallable, Server, Reliable, WithValidation)
+		void SetLobbyIsReady(bool Ready);
+
+	UFUNCTION(BlueprintPure)
+	inline bool IsLobbyReady()
+	{
+		return Lobby_IsReady;
+	}
 	UPROPERTY(BlueprintReadWrite,Replicated)
 		int KillScore;
 	UPROPERTY(BlueprintReadWrite, Replicated)
@@ -34,5 +43,7 @@ public:
 	}
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const override;
+protected:
+	virtual void CopyProperties(APlayerState* PlayerState) override;
 
 };

@@ -50,6 +50,8 @@ void AXBallGameModeBase::Tick(float DeltaSeconds)
 void AXBallGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
+	//It Used for some test situations.
+	//Such as load map directly(not travel from Lobby).
 	if (!MapSeed)
 	{
 		do
@@ -57,11 +59,7 @@ void AXBallGameModeBase::PostLogin(APlayerController* NewPlayer)
 			MapSeed = FMath::Rand();
 		} while (!MapSeed);
 	}
-	TArray<FBlockInfo> x = UMyBPFuncLib::CollectMapModified(this);
-	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("Seed Is:%d"), MapSeed));
-	((AXBallPlayerControllerBase*)NewPlayer)->ReGenOldMap(ACircleOnlyMapGenerator::StaticClass(), 100, 100, 50, MapSeed,x);
-	((AXBallPlayerControllerBase*)NewPlayer)->InitGameUI();
-	((AXBallPlayerControllerBase*)NewPlayer)->SetIsInLobby(false);
+	InitPlayerController(NewPlayer);
 }
 
 void AXBallGameModeBase::PrepareReSpawn(AXBallPlayerControllerBase* TargetController)
@@ -123,7 +121,7 @@ void AXBallGameModeBase::CheckScore()
 				if (TeamsScore[i]>=TargetScore)
 				{
 					SetMatchState("Ended");
-					RiseGameOver(i);
+					RiseGameOver(i+1);
 					return;
 				}
 			}
@@ -152,6 +150,41 @@ void AXBallGameModeBase::RiseGameOver(int WinTeam)
 		Cast<AXBallPlayerControllerBase>(XBallController)->ShowResultSync(WinTeam);
 		Cast<AXBallPlayerControllerBase>(XBallController)->SetIsInLobby(true);
 	}
+}
+
+void AXBallGameModeBase::InitXBallGame(bool IsTeamPlay, int TargetScore, int InitMoney)
+{
+	SetIsTeamGame(IsTeamPlay);
+	this->TargetScore = TargetScore;
+	this->InitMoney = InitMoney;
+	//Gen Map Seed
+	if (!MapSeed)
+	{
+		do
+		{
+			MapSeed = FMath::Rand();
+		} while (!MapSeed);
+	}
+	//Notify Existing Controller
+	for (auto it = GetWorld()->GetPlayerControllerIterator();it;++it)
+	{
+		//Check If Client has complietly loaded the map
+		//The other controller will be handle by 
+		if ((*it)->HasClientLoadedCurrentWorld())
+		{
+			InitPlayerController(it->Get());
+		}
+	}
+}
+
+void AXBallGameModeBase::InitPlayerController(APlayerController* PlayerControllerToInit)
+{
+	AXBallPlayerControllerBase* NewPlayer = Cast<AXBallPlayerControllerBase>(PlayerControllerToInit);
+	TArray<FBlockInfo> x = UMyBPFuncLib::CollectMapModified(this);
+	NewPlayer->ReGenOldMap(ACircleOnlyMapGenerator::StaticClass(), 100, 100, 50, MapSeed, x);
+	NewPlayer->InitGameUI();
+	NewPlayer->SetIsInLobby(false);
+	NewPlayer->Coins = InitMoney;
 }
 
 void AXBallGameModeBase::HandleMatchHasStarted()

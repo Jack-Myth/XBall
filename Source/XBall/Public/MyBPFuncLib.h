@@ -7,6 +7,8 @@
 #include "IMapGenerator.h"
 #include "MyBPFuncLib.generated.h"
 
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnCreateSessionFinished, FName, SessionName, bool, IsSucceed);
+
 /**
  * 
  */
@@ -51,4 +53,7 @@ public:
 
 	UFUNCTION(BlueprintPure)
 		static void GetActionInfo(TSubclassOf<AActionBase> ActionClass, FString& Title, FString& Intro, int& Price);
+
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObj"))
+		static bool CreateOnlineSessionWithName(UObject* WorldContextObj,class APlayerController* HostedController, int PublicConnections, bool UsingLAN, FName ServerName, FOnCreateSessionFinished OnCreateSessionFinished);
 };

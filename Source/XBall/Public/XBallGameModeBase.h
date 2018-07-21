@@ -17,6 +17,7 @@ class XBALL_API AXBallGameModeBase : public AGameMode
 	int32 MapSeed;
 	bool bIsTeamGame=false;
 	int TargetScore=5;
+	int InitMoney = 800;
 
 	struct FPlayerRespawnInfo 
 	{
@@ -57,6 +58,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		void RiseGameOver(int WinTeam);
+
+	UFUNCTION()
+		void InitXBallGame(bool IsTeamPlay,int TargetScore,int InitMoney);
+
+	UFUNCTION()
+		void InitPlayerController(APlayerController* PlayerControllerToInit);
 
 protected:
 	virtual void HandleMatchHasStarted() override;

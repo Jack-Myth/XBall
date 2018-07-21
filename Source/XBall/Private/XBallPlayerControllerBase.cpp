@@ -8,6 +8,7 @@
 #include "XBallPlayerState.h"
 #include "UserWidget.h"
 #include "WidgetBlueprintLibrary.h"
+#include "XBallGameModeBase.h"
 
 void AXBallPlayerControllerBase::ReGenOldMap_Implementation(UClass* MapGenerator,int MaxEngth, int MaxWidth, int MaxHeight, int32 Seed,const TArray<FBlockInfo>& BlockInfo)
 {
@@ -38,6 +39,11 @@ void AXBallPlayerControllerBase::SetupInputComponent()
 AXBallPlayerControllerBase::AXBallPlayerControllerBase()
 {
 	TempActionBar.SetNum(8,false);
+}
+
+bool AXBallPlayerControllerBase::SetTeam_Validate(int NewTeam)
+{
+	return true;
 }
 
 int AXBallPlayerControllerBase::GetTeam()
@@ -103,6 +109,33 @@ class UUserWidget* AXBallPlayerControllerBase::FindActionBarItemWidgetFor(AActio
 		}
 	}
 	return nullptr;
+}
+
+void AXBallPlayerControllerBase::PostSeamlessTravel()
+{
+	AXBallGameModeBase* XBallGameMode = Cast<AXBallGameModeBase>(UGameplayStatics::GetGameMode(this));
+	if (XBallGameMode)
+	{
+		//Init PlayerController
+		//GenMap, Get default value etc..
+		XBallGameMode->InitPlayerController(this);
+	}
+}
+
+void AXBallPlayerControllerBase::PreClientTravel(const FString& PendingURL, ETravelType TravelType, bool bIsSeamlessTravel)
+{
+	Super::PreClientTravel(PendingURL, TravelType, bIsSeamlessTravel);
+	if (bIsSeamlessTravel)
+	{
+		//Remove All widget from Viewport
+		//Just the same as OpenLevel,Construct Widget by Next Level
+		TArray<UUserWidget*> Widgets;
+		UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, Widgets, UUserWidget::StaticClass(), false);
+		for (UUserWidget*& Widget : Widgets)
+		{
+			Widget->RemoveFromViewport();
+		}
+	}
 }
 
 void AXBallPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
@@ -296,6 +329,18 @@ void AXBallPlayerControllerBase::CloseRank()
 		RankWidget->RemoveFromParent();
 		RankWidget = nullptr;
 	}
+}
+
+void AXBallPlayerControllerBase::SetPlayerName_Implementation(const FString& NewName)
+{
+	PlayerState->SetPlayerName(NewName);
+}
+
+bool AXBallPlayerControllerBase::SetPlayerName_Validate(const FString& NewName)
+{
+	if (NewName.Len() > 128)
+		return false;
+	return true;
 }
 
 void AXBallPlayerControllerBase::ShowResultSync_Implementation(int WinTeam)

@@ -20,10 +20,35 @@ void AXBallPlayerState::SetCustomTexture_Implementation(const FString& TexturePa
 	}
 }
 
+void AXBallPlayerState::SetLobbyIsReady_Implementation(bool Ready)
+{
+	Lobby_IsReady = Ready;
+}
+
+bool AXBallPlayerState::SetLobbyIsReady_Validate(bool Ready)
+{
+	return true;
+}
+
 void AXBallPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AXBallPlayerState, KillScore);
 	DOREPLIFETIME(AXBallPlayerState, DeadCount);
 	DOREPLIFETIME(AXBallPlayerState, Team);
+	DOREPLIFETIME(AXBallPlayerState, Lobby_IsReady);
+}
+
+void AXBallPlayerState::CopyProperties(APlayerState* PlayerState)
+{
+	Super::CopyProperties(PlayerState);
+	AXBallPlayerState* XBallPlayerState = Cast<AXBallPlayerState>(PlayerState);
+	if (XBallPlayerState)
+	{
+		//KillScore And DeadCount may use for out-game rank
+		XBallPlayerState->KillScore = KillScore;
+		XBallPlayerState->DeadCount = DeadCount;
+
+		XBallPlayerState->Team = Team;
+	}
 }

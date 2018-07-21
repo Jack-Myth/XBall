@@ -41,17 +41,17 @@ protected:
 	UPROPERTY(Replicated)
 		TArray<AActionBase*> TempActionBar;
 
-	UPROPERTY(BlueprintReadWrite,Replicated)
-		int Coins=800;
-
 	virtual void SetupInputComponent() override;
 
 public:
+	UPROPERTY(BlueprintReadWrite, Replicated)
+		int Coins = 800;
+
 	AXBallPlayerControllerBase();
 
-	UFUNCTION(BlueprintCallable, NetMulticast,Reliable)
+	UFUNCTION(BlueprintCallable, Server,Reliable,WithValidation)
 		void SetTeam(int NewTeam);
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintPure)
 		int GetTeam();
 	UFUNCTION(BlueprintCallable,NetMulticast,Reliable,WithValidation)
 		void SetPlayerDefaultCharacter(TSubclassOf<AXBallBase> DefaultCharacter);
@@ -85,6 +85,12 @@ public:
 		void BuildMap(UClass* MapGenerator, int MaxEngth, int MaxWidth, int MaxHeight,int32 NoiseSeed);*/
 	UFUNCTION(BlueprintCallable,Client, Reliable, WithValidation)
 		void ReGenOldMap(UClass* MapGenerator,int MaxEngth, int MaxWidth, int MaxHeight, int32 Seed,const TArray<FBlockInfo>& BlockInfo);
+
+	virtual void PostSeamlessTravel() override;
+
+
+	virtual void PreClientTravel(const FString& PendingURL, ETravelType TravelType, bool bIsSeamlessTravel) override;
+
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const override;
 
@@ -162,9 +168,13 @@ public:
 	UFUNCTION(BlueprintCallable, Client, Reliable)
 		void CloseWaitingRespawn();
 
+	UFUNCTION(BlueprintCallable,Server,Reliable,WithValidation)
+		void SetPlayerName(const FString& NewName);
+
 
 	//Show Game Result
-	//If WinTeam is less than 0(-1),It means the game isn't Team Play Game.
+	//If WinTeam is less or equal than 0(<=0),It means the game isn't Team Play Game.
 	UFUNCTION(BlueprintCallable,Client,Reliable)
 		void ShowResultSync(int WinTeam);
+
 };
