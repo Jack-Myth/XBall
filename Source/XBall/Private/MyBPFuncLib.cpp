@@ -17,6 +17,9 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
+#include "AssetRegistryHelpers.h"
+#include "IAssetRegistry.h"
+#include "Engine/AssetManager.h"
 
 /*void UMyBPFuncLib::SetMapGenerator(UMapGenerator* newMapGenerator)
 {
@@ -256,4 +259,21 @@ bool UMyBPFuncLib::CreateOnlineSessionWithName(UObject* WorldContextObj, class A
 		}
 	}
 		return false;
+}
+
+TArray<UClass*> UMyBPFuncLib::SearchBPClassByPath(FName AssetsPath, TSubclassOf<UObject> TargetClass)
+{
+	TArray<FAssetData> Assets;
+	TArray<UClass*> TargetClasses;
+	UAssetManager::Get().GetAssetRegistry().GetAssetsByPath(AssetsPath, Assets, true);
+	for (auto it= Assets.CreateIterator();it;++it)
+	{
+		FString AssetPath = it->ObjectPath.ToString();
+		if (!AssetPath.EndsWith("_C"))
+			AssetPath.Append("_C");
+		UClass* AssetClass = LoadClass<UObject>(nullptr,*AssetPath);
+		if(AssetClass&&AssetClass->IsChildOf(TargetClass))
+			TargetClasses.Add(AssetClass);
+	}
+	return TargetClasses;
 }

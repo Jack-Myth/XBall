@@ -114,7 +114,9 @@ class UUserWidget* AXBallPlayerControllerBase::FindActionBarItemWidgetFor(AActio
 void AXBallPlayerControllerBase::PostSeamlessTravel()
 {
 	AXBallGameModeBase* XBallGameMode = Cast<AXBallGameModeBase>(UGameplayStatics::GetGameMode(this));
-	if (XBallGameMode)
+	//Local controller shouldn't be Init Directly.
+	//It will be Init by PostSeamlessTravel() In XBallGameModeBase.
+	if (XBallGameMode&&!IsLocalController())
 	{
 		//Init PlayerController
 		//GenMap, Get default value etc..

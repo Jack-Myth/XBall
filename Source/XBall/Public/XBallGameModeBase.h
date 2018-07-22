@@ -47,6 +47,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void PrepareReSpawn(AXBallPlayerControllerBase* TargetController);
 
+	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
+
 	
 	/*virtual APawn* SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer, const FTransform& SpawnTransform) override;*/
 
@@ -64,6 +66,9 @@ public:
 
 	UFUNCTION()
 		void InitPlayerController(APlayerController* PlayerControllerToInit);
+
+
+	virtual void PostSeamlessTravel() override;
 
 protected:
 	virtual void HandleMatchHasStarted() override;

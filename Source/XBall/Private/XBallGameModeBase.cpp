@@ -8,6 +8,7 @@
 #include "XBallBase.h"
 #include "Engine/World.h"
 #include "XBallPlayerState.h"
+#include "XBallGameInstanceNative.h"
 
 AXBallGameModeBase::AXBallGameModeBase()
 {
@@ -84,6 +85,20 @@ void AXBallGameModeBase::PrepareReSpawn(AXBallPlayerControllerBase* TargetContro
 	}
 }
 
+UClass* AXBallGameModeBase::GetDefaultPawnClassForController_Implementation(AController* InController)
+{
+	AXBallPlayerControllerBase* XballController = Cast<AXBallPlayerControllerBase>(InController);
+	if (XballController)
+	{
+		UClass* DefaultXBallClass= XballController->GetPlayerDefaultCharacter();
+		return DefaultXBallClass ? DefaultXBallClass : DefaultPawnClass;
+	}
+	else
+	{
+		return DefaultPawnClass;
+	}
+}
+
 void AXBallGameModeBase::RestartPlayerAtTransform(AController* NewPlayer, const FTransform& SpawnTransform)
 {
 	TArray<AActor*> ActorsCollection;
@@ -121,7 +136,7 @@ void AXBallGameModeBase::CheckScore()
 				if (TeamsScore[i]>=TargetScore)
 				{
 					SetMatchState("Ended");
-					RiseGameOver(i+1);
+					RiseGameOver(i);
 					return;
 				}
 			}
@@ -154,6 +169,7 @@ void AXBallGameModeBase::RiseGameOver(int WinTeam)
 
 void AXBallGameModeBase::InitXBallGame(bool IsTeamPlay, int TargetScore, int InitMoney)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 20, FColor::Green, "Init XBall Game!");
 	SetIsTeamGame(IsTeamPlay);
 	this->TargetScore = TargetScore;
 	this->InitMoney = InitMoney;
@@ -179,12 +195,33 @@ void AXBallGameModeBase::InitXBallGame(bool IsTeamPlay, int TargetScore, int Ini
 
 void AXBallGameModeBase::InitPlayerController(APlayerController* PlayerControllerToInit)
 {
+	//Ignore Init Request when Host doesn't completely loaded map.
+	if (GetWorld()->IsInSeamlessTravel())
+		return;
+	GEngine->AddOnScreenDebugMessage(-1, 20, FColor::Green, "Init PlayerController!");
 	AXBallPlayerControllerBase* NewPlayer = Cast<AXBallPlayerControllerBase>(PlayerControllerToInit);
 	TArray<FBlockInfo> x = UMyBPFuncLib::CollectMapModified(this);
 	NewPlayer->ReGenOldMap(ACircleOnlyMapGenerator::StaticClass(), 100, 100, 50, MapSeed, x);
 	NewPlayer->InitGameUI();
 	NewPlayer->SetIsInLobby(false);
 	NewPlayer->Coins = InitMoney;
+}
+
+void AXBallGameModeBase::PostSeamlessTravel()
+{
+	Super::PostSeamlessTravel();
+	//Get Stored Value From GameInstance
+	UXBallGameInstanceNative* GameInstance = Cast<UXBallGameInstanceNative>(UGameplayStatics::GetGameInstance(this));
+	if (GameInstance)
+	{
+		InitXBallGame(GameInstance->StoredFloat.FindRef("bIsTeamPlay"),
+			GameInstance->StoredFloat.FindRef("TargetScore"),
+			GameInstance->StoredFloat.FindRef("InitMoney"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed To Cast GameInstance!"));
+	}
 }
 
 void AXBallGameModeBase::HandleMatchHasStarted()

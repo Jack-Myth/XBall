@@ -56,4 +56,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObj"))
 		static bool CreateOnlineSessionWithName(UObject* WorldContextObj,class APlayerController* HostedController, int PublicConnections, bool UsingLAN, FName ServerName, FOnCreateSessionFinished OnCreateSessionFinished);
+
+	UFUNCTION(BlueprintCallable)
+		static TArray<UClass*> SearchBPClassByPath(FName AssetsPath,TSubclassOf<UObject> TargetClass);
 };

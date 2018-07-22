@@ -87,6 +87,11 @@ bool AXBallBase::DoReload_Validate()
 	return true;
 }
 
+FString AXBallBase::GetXBallName_Implementation()
+{
+	return "XBall";
+}
+
 // Sets default values
 AXBallBase::AXBallBase()
 {
@@ -137,6 +142,7 @@ AXBallBase::AXBallBase()
 	OnTakeAnyDamage.AddDynamic(this, &AXBallBase::AnyDamage_Internal);
 
 	ActionList.SetNum(8,false);
+	AutoPossessAI = EAutoPossessAI::Disabled;
 }
 
 AActionBase* AXBallBase::AddActionToBar(int Index, AActionBase* Action)
@@ -214,8 +220,11 @@ void AXBallBase::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 	AXBallPlayerControllerBase* XballController = Cast<AXBallPlayerControllerBase>(NewController);
-	Team= XballController->GetTeam();
-	RefreshPlayerAppearance(Team);
+	if (XballController)
+	{
+		Team = XballController->GetTeam();
+		RefreshPlayerAppearance(Team);
+	}
 }
 
 void AXBallBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -625,6 +634,11 @@ class AXBallPlayerControllerBase* AXBallBase::GetXBallController()
 	return Cast<AXBallPlayerControllerBase>(GetController());
 }
 
+void AXBallBase::SetEntireMaterial_Implementation(UMaterialInterface* Mat)
+{
+	CoreBallMesh->SetMaterial(0, Mat);
+}
+
 void AXBallBase::RefreshPlayerAppearance(int Team)
 {
 	UE_LOG(LogTemp, Display, TEXT("Init Player"));
@@ -651,7 +665,7 @@ void AXBallBase::RefreshPlayerAppearance(int Team)
 			break;
 	}
 	UMaterialInstanceDynamic* TargetDMI = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, MatInterface);
-	CoreBallMesh->SetMaterial(0, TargetDMI);
+	SetEntireMaterial(TargetDMI);
 	if (GetXBallController())
 	{
 		AXBallPlayerState* PlayerState = Cast<AXBallPlayerState>(GetXBallController()->GetXBallPlayerState());

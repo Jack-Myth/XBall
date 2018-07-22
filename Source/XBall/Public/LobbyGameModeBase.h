@@ -25,7 +25,4 @@ public:
 		int InitMoney=800;
 	UFUNCTION(BlueprintCallable)
 		void LoadGameMapSeamless(FString MapURL);
-
-	virtual void PostSeamlessTravel() override;
-
 };

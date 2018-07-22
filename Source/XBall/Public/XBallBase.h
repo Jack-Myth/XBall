@@ -47,6 +47,9 @@ public:
 		return bSprintable;
 	}
 
+	UFUNCTION(BlueprintPure, BlueprintNativeEvent)
+		FString GetXBallName();
+
 	UFUNCTION(BlueprintCallable, Server, Reliable, WithValidation)
 		void DoReload();
 
@@ -246,4 +249,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		class AXBallPlayerControllerBase* GetXBallController();
+
+	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
+		void SetEntireMaterial(UMaterialInterface* Mat);
 };
