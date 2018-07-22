@@ -140,6 +140,13 @@ void AXBallPlayerControllerBase::PreClientTravel(const FString& PendingURL, ETra
 	}
 }
 
+void AXBallPlayerControllerBase::SeamlessTravelTo(class APlayerController* NewPC)
+{
+	Super::SeamlessTravelTo(NewPC);
+	AXBallPlayerControllerBase* XBallPlayerController = Cast<AXBallPlayerControllerBase>(NewPC);
+	XBallPlayerController->PlayerDefaultCharacter = PlayerDefaultCharacter;
+}
+
 void AXBallPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -147,6 +154,7 @@ void AXBallPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 	DOREPLIFETIME(AXBallPlayerControllerBase, TempActionBar);
 	DOREPLIFETIME(AXBallPlayerControllerBase, bIsInLobby);
 	DOREPLIFETIME(AXBallPlayerControllerBase, Coins);
+	DOREPLIFETIME(AXBallPlayerControllerBase, PlayerDefaultCharacter);
 }
 
 /*void AXBallPlayerControllerBase::Possess(APawn* aPawn)

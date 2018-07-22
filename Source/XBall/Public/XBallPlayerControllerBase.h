@@ -34,7 +34,7 @@ class XBALL_API AXBallPlayerControllerBase : public APlayerController
 	UPROPERTY(Replicated)
 		bool bIsInLobby=true;
 protected:
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere,Replicated)
 		UClass* PlayerDefaultCharacter;
 	UPROPERTY(Replicated)
 		TArray<AActionBase*> ActionInventory;
@@ -53,7 +53,7 @@ public:
 		void SetTeam(int NewTeam);
 	UFUNCTION(BlueprintPure)
 		int GetTeam();
-	UFUNCTION(BlueprintCallable,NetMulticast,Reliable,WithValidation)
+	UFUNCTION(BlueprintCallable,Server,Reliable,WithValidation)
 		void SetPlayerDefaultCharacter(TSubclassOf<AXBallBase> DefaultCharacter);
 	
 	inline TArray<AActionBase*> GetTempActionBar()
@@ -90,6 +90,9 @@ public:
 
 
 	virtual void PreClientTravel(const FString& PendingURL, ETravelType TravelType, bool bIsSeamlessTravel) override;
+
+
+	virtual void SeamlessTravelTo(class APlayerController* NewPC) override;
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const override;
