@@ -20,6 +20,7 @@
 #include "AssetRegistryHelpers.h"
 #include "IAssetRegistry.h"
 #include "Engine/AssetManager.h"
+#include "../DesktopPlatform/Public/DesktopPlatformModule.h"
 
 /*void UMyBPFuncLib::SetMapGenerator(UMapGenerator* newMapGenerator)
 {
@@ -276,4 +277,19 @@ TArray<UClass*> UMyBPFuncLib::SearchBPClassByPath(FName AssetsPath, TSubclassOf<
 			TargetClasses.Add(AssetClass);
 	}
 	return TargetClasses;
+}
+
+FString UMyBPFuncLib::GetOpenFileName(FString Title, FString DefaultPath, FString Filter)
+{
+	TArray<FString> FileNames;
+	if (FDesktopPlatformModule::Get()->OpenFileDialog(nullptr, Title, DefaultPath, "", Filter, EFileDialogFlags::None, FileNames))
+		return FileNames[0];
+	return "";
+}
+
+TArray<uint8> UMyBPFuncLib::LoadFileAsBytes(FString FilePath)
+{
+	TArray<uint8> FileData;
+	FFileHelper::LoadFileToArray(FileData, *FilePath);
+	return FileData;
 }

@@ -20,7 +20,7 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 		int MaxPlayer=16;
 	UPROPERTY(BlueprintReadWrite)
-		int TargetScore=8;
+		int TargetScore=32;
 	UPROPERTY(BlueprintReadWrite)
 		int InitMoney=800;
 	UFUNCTION(BlueprintCallable)

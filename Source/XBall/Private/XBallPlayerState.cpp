@@ -8,14 +8,21 @@
 
 void AXBallPlayerState::SetCustomTexture_Implementation(const FString& TextureParamterName, const TArray<uint8>& TextureData)
 {
+	
 	if (TextureData.Num())
 	{
-		CustomTexturesData.FindOrAdd(TextureParamterName) = TextureData;
+		if (TextureParamterName=="BaseColor")
+		{
+			BaseTextureData = TextureData;
+		}
+		else if (TextureParamterName=="NormalMap")
+		{
+			NormalMapData = TextureData;
+		}
 		CustomTextures.FindOrAdd(TextureParamterName) = UMyBPFuncLib::GetTextureFromData(TextureData);
 	}
 	else
 	{
-		CustomTexturesData.Remove(TextureParamterName);
 		CustomTextures.Remove(TextureParamterName);
 	}
 }
@@ -30,6 +37,31 @@ bool AXBallPlayerState::SetLobbyIsReady_Validate(bool Ready)
 	return true;
 }
 
+bool AXBallPlayerState::SetCustomTexture_Validate(const FString& TextureParamterName, const TArray<uint8>& TextureData)
+{
+	if (TextureData.Num()>256*1024)
+	{
+		return false;
+	}
+	return true;
+}
+
+void AXBallPlayerState::BaseTextureData_Rep()
+{
+	if (BaseTextureData.Num())
+		CustomTextures.FindOrAdd("BaseTexture") = UMyBPFuncLib::GetTextureFromData(BaseTextureData);
+	else
+		CustomTextures.FindOrAdd("BaseTexture") = nullptr;
+}
+
+void AXBallPlayerState::NormalMapData_Rep()
+{
+	if (NormalMapData.Num())
+		CustomTextures.FindOrAdd("NormalMap") = UMyBPFuncLib::GetTextureFromData(NormalMapData);
+	else
+		CustomTextures.FindOrAdd("NormalMap") = nullptr;
+}
+
 void AXBallPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -37,6 +69,8 @@ void AXBallPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & O
 	DOREPLIFETIME(AXBallPlayerState, DeadCount);
 	DOREPLIFETIME(AXBallPlayerState, Team);
 	DOREPLIFETIME(AXBallPlayerState, Lobby_IsReady);
+	DOREPLIFETIME(AXBallPlayerState, NormalMapData);
+	DOREPLIFETIME(AXBallPlayerState, BaseTextureData);
 }
 
 void AXBallPlayerState::CopyProperties(APlayerState* PlayerState)

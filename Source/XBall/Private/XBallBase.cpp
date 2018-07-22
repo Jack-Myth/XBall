@@ -665,10 +665,9 @@ void AXBallBase::RefreshPlayerAppearance(int Team)
 			break;
 	}
 	UMaterialInstanceDynamic* TargetDMI = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, MatInterface);
-	SetEntireMaterial(TargetDMI);
 	if (GetXBallController())
 	{
-		AXBallPlayerState* PlayerState = Cast<AXBallPlayerState>(GetXBallController()->GetXBallPlayerState());
+		AXBallPlayerState* PlayerState = GetXBallController()->GetXBallPlayerState();
 		if (PlayerState)
 		{
 			auto Textures = PlayerState->GetCustomTextures();
@@ -681,6 +680,7 @@ void AXBallBase::RefreshPlayerAppearance(int Team)
 		ActionList.SetNum(8,false);
 		GetXBallController()->ClearTempActionBar();
 	}
+	SetEntireMaterial(TargetDMI);
 }
 
 void AXBallBase::Rep_Team()

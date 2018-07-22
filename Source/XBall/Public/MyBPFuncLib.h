@@ -59,4 +59,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		static TArray<UClass*> SearchBPClassByPath(FName AssetsPath,TSubclassOf<UObject> TargetClass);
+
+	UFUNCTION(BlueprintCallable)
+		static FString GetOpenFileName(FString Title,FString DefaultPath,FString Filter);
+
+	UFUNCTION(BlueprintCallable)
+		static TArray<uint8> LoadFileAsBytes(FString FilePath);
 };
