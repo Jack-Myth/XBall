@@ -9,6 +9,7 @@
 #include "Engine/World.h"
 #include "XBallPlayerState.h"
 #include "XBallGameInstanceNative.h"
+#include "ConstructorHelpers.h"
 
 AXBallGameModeBase::AXBallGameModeBase()
 {

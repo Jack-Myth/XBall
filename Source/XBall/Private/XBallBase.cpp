@@ -29,6 +29,12 @@ FVector AXBallBase::GetCursorLocation(FVector* outSurfaceNormal)
 	{
 		FHitResult CursorHitresult;
 		mPlayerController->GetHitResultUnderCursorByChannel(ETraceTypeQuery::TraceTypeQuery1, false, CursorHitresult);
+		if (CursorHitresult.GetActor()==this)
+		{
+			UKismetSystemLibrary::LineTraceSingle(this, PlayerCamera->GetComponentLocation(),
+				(CursorHitresult.Location - PlayerCamera->GetComponentLocation()) * 2 + PlayerCamera->GetComponentLocation(), ETraceTypeQuery::TraceTypeQuery1,
+				false, TArray<AActor*>({ this }), EDrawDebugTrace::None, CursorHitresult, true);
+		}
 		if (outSurfaceNormal)
 			*outSurfaceNormal = CursorHitresult.ImpactNormal;
 		if (CursorHitresult.bBlockingHit)
@@ -224,6 +230,10 @@ void AXBallBase::PossessedBy(AController* NewController)
 	{
 		Team = XballController->GetTeam();
 		RefreshPlayerAppearance(Team);
+		if (XballController->GetXBallPlayerState())
+		{
+			XballController->GetXBallPlayerState()->HoldingCharacter = this;
+		}
 	}
 }
 
@@ -664,7 +674,7 @@ void AXBallBase::RefreshPlayerAppearance(int Team)
 			MatInterface= LoadObject<UMaterial>(nullptr, TEXT("Material'/Game/XBall/Materials/TeamMat/TeamColorBase.TeamColorBase'"));
 			break;
 	}
-	UMaterialInstanceDynamic* TargetDMI = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, MatInterface);
+	TargetDMI = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, MatInterface);
 	if (GetXBallController())
 	{
 		AXBallPlayerState* PlayerState = GetXBallController()->GetXBallPlayerState();

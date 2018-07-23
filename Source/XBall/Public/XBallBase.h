@@ -41,6 +41,9 @@ class XBALL_API AXBallBase : public ACharacter
 	UPROPERTY(Replicated)
 		bool bSprintable=true;
 public:
+	UPROPERTY(BlueprintReadWrite)
+		UMaterialInstanceDynamic * TargetDMI;
+
 	UFUNCTION(BlueprintPure)
 	inline bool IsSprintable()
 	{

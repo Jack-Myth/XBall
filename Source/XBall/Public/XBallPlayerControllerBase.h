@@ -174,7 +174,6 @@ public:
 	UFUNCTION(BlueprintCallable,Server,Reliable,WithValidation)
 		void SetPlayerName(const FString& NewName);
 
-
 	//Show Game Result
 	//If WinTeam is less or equal than 0(<=0),It means the game isn't Team Play Game.
 	UFUNCTION(BlueprintCallable,Client,Reliable)

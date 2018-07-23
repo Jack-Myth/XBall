@@ -189,9 +189,9 @@ UTexture2D* UMyBPFuncLib::TextureFromImage(const int32 SrcWidth, const int32 Src
 		SrcPtr = const_cast<FColor*>(&SrcData[(SrcHeight - 1 - y)*SrcWidth]);
 		for (int32 x = 0; x < SrcWidth; x++)
 		{
-			*DestPtr++ = SrcPtr->B;
-			*DestPtr++ = SrcPtr->G;
 			*DestPtr++ = SrcPtr->R;
+			*DestPtr++ = SrcPtr->G;
+			*DestPtr++ = SrcPtr->B;
 			if (UseAlpha)
 			{
 				*DestPtr++ = SrcPtr->A;
