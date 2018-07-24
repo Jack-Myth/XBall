@@ -11,6 +11,10 @@
 #include "IPAddress.h"
 #include "Sockets.h"
 #include "XBallPlayerControllerBase.h"
+#include "SocketSubsystem.h"
+#include "Engine/World.h"
+#include "Runtime/Networking/Public/Common/TcpSocketBuilder.h"
+#include "XBallGameModeBase.h"
 
 void AXBallPlayerState::SetCustomTexture(const FString& TextureParamterName, const TArray<uint8>& TextureData)
 {
@@ -48,7 +52,7 @@ AXBallPlayerState::AXBallPlayerState()
 	//PrimaryActorTick.bCanEverTick = true;
 }
 
-void AXBallPlayerState::BaseTextureData_Rep()
+void AXBallPlayerState::GenBaseTexture()
 {
 	if (BaseTextureData.Num())
 	{
@@ -88,21 +92,18 @@ void AXBallPlayerState::NormalMapData_Rep()
 	}
 }
 
-void AXBallPlayerState::NotifyGetTextureData_Implementation(int Port)
+void AXBallPlayerState::NotifyGetTextureData_Implementation(int Port,int DataSize)
 {
 	if (UGameplayStatics::GetPlayerController(this, 0))
 	{
 		//Authority won't pass this test beacuse it's NetConnection will be null
 		//So these code won't run on server.
 		if (UGameplayStatics::GetPlayerController(this, 0)->NetConnection&&
-			UGameplayStatics::GetPlayerController(this, 0)->NetConnection->URL.Host)
+			UGameplayStatics::GetPlayerController(this, 0)->NetConnection->URL.Host != "")
 		{
-			CustomTextureSocket.Empty();
-			CustomTextureSocket.Add(FTcpSocketBuilder("CustomTextureReceiver")
-				.AsNonBlocking().Build());
-			if (!CustomTextureSocket[0])
+			CustomTextureSocket=MakeShareable(FTcpSocketBuilder("CustomTextureReceiver").AsNonBlocking().Build());
+			if (!CustomTextureSocket.IsValid())
 			{
-				CustomTextureSocket.Empty();
 				return;
 			}
 			TSharedRef<FInternetAddr> ServerAddr = ISocketSubsystem::Get()->CreateInternetAddr();
@@ -111,20 +112,14 @@ void AXBallPlayerState::NotifyGetTextureData_Implementation(int Port)
 			if (!IsServerIPValid)
 				return;
 			ServerAddr->SetPort(Port);
-			if (!CustomTextureSocket[0]->Connect(ServerAddr))
+			if (!CustomTextureSocket->Connect(ServerAddr.Get()))
 				return;
 			BaseTextureData.Empty();
 			//Async Receive.
 			GetWorld()->GetTimerManager().SetTimer(CustomTextureTimer, [=]()
 				{
-					int PendingDataSize;
-					if (CustomTextureSocket[0]->GetConnectionState() != ESocketConnectionState::SCS_Connected)
-					{
-						GetWorld()->GetTimerManager().ClearTimer(CustomTextureTimer);
-						CustomTextureSocket[0]->Close();
-						CustomTextureSocket.Empty();
-					}
-					if (CustomTextureSocket[0]->HasPendingData(PendingDataSize))
+					uint32 PendingDataSize;
+					if (CustomTextureSocket->HasPendingData(PendingDataSize))
 					{
 						TArray<uint8> tmpData;
 						tmpData.SetNum(PendingDataSize, false);
@@ -132,40 +127,59 @@ void AXBallPlayerState::NotifyGetTextureData_Implementation(int Port)
 						CustomTextureSocket->Recv(tmpData.GetData(), PendingDataSize, ByteRead);
 						BaseTextureData.Append(tmpData);
 					}
+					if (CustomTextureSocket->GetConnectionState() != ESocketConnectionState::SCS_Connected||BaseTextureData.Num()>=DataSize)
+					{
+						GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, "Client Disconnet");
+						//Disconnect and Gen Texture.
+						GetWorld()->GetTimerManager().ClearTimer(CustomTextureTimer);
+						CustomTextureSocket->Close();
+						GenBaseTexture();
+					}
 				}, 0.02f, true);
 		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, "Invalid NetConnection");
+		}
 	}
+	else
+		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Invalid PlayerController");
 }
 
 void AXBallPlayerState::SyncTextureDataToClient()
 {
-	CustomTextureSocket.Add(FTcpSocketBuilder::AsNonBlocking().AsReusable().Build());
+	GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Cyan, "Begin Sync TextureData To Client");
+	CustomTextureSocket=MakeShareable(FTcpSocketBuilder("SyncTextureServerSocket").AsNonBlocking().AsReusable().Build());
+	TSharedRef<FInternetAddr> LocalAddr = ISocketSubsystem::Get()->GetLocalBindAddr(*GLog);
+	int TargetPort = ISocketSubsystem::Get()->BindNextPort(CustomTextureSocket.Get(), LocalAddr.Get(), 5, 1);
+	if (!TargetPort)
+		return;
+	CustomTextureSocket->Listen(32);
+	bIsTextureSending = true;
 	GetWorld()->GetTimerManager().SetTimer(CustomTextureTimer, [=]()
 		{
 			bool HasPendingConnection;
-			CustomTextureSocket[0]->HasPendingConnection(HasPendingConnection);
+			CustomTextureSocket->HasPendingConnection(HasPendingConnection);
 			while (HasPendingConnection)
 			{
-				FSocket* tempSocket = CustomTextureSocket[0]->Accept("PlayerStateClientSocket");
+				FSocket* tempSocket = CustomTextureSocket->Accept("PlayerStateClientSocket");
 				int ByteSent;
 				tempSocket->Send(BaseTextureData.GetData(), BaseTextureData.Num(),ByteSent);
-				if (ByteSent!=BaseTextureData.Num())
-				{
-					UE_LOG(LogTemp, Error, TEXT("Server-Client Custom Texture Sync Failed:ByteSent is not equal to Data Count"));
-				}
 				tempSocket->Close();
-				CustomTextureSocket.Add(tempSocket);
-				CustomTextureSocket[0]->HasPendingConnection(HasPendingConnection);
+				CustomTextureSocket->HasPendingConnection(HasPendingConnection);
 			}
-			TArray<AActor*> Controllers;
-			UGameplayStatics::GetAllActorsOfClass(this, AXBallPlayerControllerBase::StaticClass(), Controllers);
-			if (CustomTextureSocket.Num()>=Controllers.Num())
+			//Socket will always open for new player.
+			/*if (CustomTextureSocket.Num()>=Controllers.Num()&&IsAllSocketClosed)
 			{
+				GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Green, "Socket Closed");
 				CustomTextureSocket[0]->Close();
 				CustomTextureSocket.Empty();
 				GetWorld()->GetTimerManager().ClearTimer(CustomTextureTimer);
-			}
+			}*/
 		}, 0.02f, true);
+	CustomTexturePort = TargetPort;
+	CustomTextureSize = BaseTextureData.Num();
+	//NotifyGetTextureData(TargetPort,BaseTextureData.Num());
 }
 
 void AXBallPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
@@ -178,6 +192,9 @@ void AXBallPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & O
 	//DOREPLIFETIME(AXBallPlayerState, NormalMapData);
 	//DOREPLIFETIME(AXBallPlayerState, BaseTextureData);
 	DOREPLIFETIME(AXBallPlayerState, HoldingCharacter);
+	DOREPLIFETIME(AXBallPlayerState, CustomTexturePort);
+	DOREPLIFETIME(AXBallPlayerState, CustomTextureSize);
+	DOREPLIFETIME(AXBallPlayerState, IsHost);
 }
 
 void AXBallPlayerState::Tick(float DeltaSeconds)
@@ -195,20 +212,31 @@ void AXBallPlayerState::Tick(float DeltaSeconds)
 	HoldingCharacter->SetEntireMaterial(HoldingCharacter->TargetDMI);
 }
 
+void AXBallPlayerState::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (CustomTextureSocket.IsValid())
+	{
+		CustomTextureSocket->Close();
+		GetWorld()->GetTimerManager().ClearTimer(CustomTextureTimer);
+	}
+}
+
 void AXBallPlayerState::CopyProperties(APlayerState* PlayerState)
 {
 	Super::CopyProperties(PlayerState);
 	AXBallPlayerState* XBallPlayerState = Cast<AXBallPlayerState>(PlayerState);
 	if (XBallPlayerState)
 	{
-		//KillScore And DeadCount may use for out-game rank
-		XBallPlayerState->KillScore = KillScore;
-		XBallPlayerState->DeadCount = DeadCount;
+		//XBallPlayerState->KillScore = KillScore;
+		//XBallPlayerState->DeadCount = DeadCount;
 		XBallPlayerState->NormalMapData = NormalMapData;
 		XBallPlayerState->BaseTextureData = BaseTextureData;
 		XBallPlayerState->Team = Team;
+		if (BaseTextureData.Num()&&Cast<AXBallGameModeBase>(UGameplayStatics::GetGameMode(this)))
+		{
+			XBallPlayerState->SyncTextureDataToClient();
+		}
 		XBallPlayerState->CustomTextures.FindOrAdd("BaseTexture") = UMyBPFuncLib::GetTextureFromData(BaseTextureData);
-		XBallPlayerState->CustomTextures.FindOrAdd("NormalMap") = UMyBPFuncLib::GetTextureFromData(NormalMapData);
 	}
 }
 
@@ -226,4 +254,20 @@ void AXBallPlayerState::HoldingCharacter_Rep()
 	else
 		HoldingCharacter->TargetDMI->SetTextureParameterValue("NormalMap", LoadObject<UTexture2D>(nullptr, TEXT("Texture2D'/Game/XBall/Materials/Textures/FlatenNormal.FlatenNormal'")));
 	HoldingCharacter->SetEntireMaterial(HoldingCharacter->TargetDMI);
+}
+
+void AXBallPlayerState::CustomTexturePort_Rep()
+{
+	if (CustomTextureSize!=0)
+	{
+		NotifyGetTextureData(CustomTexturePort, CustomTextureSize);
+	}
+}
+
+void AXBallPlayerState::CustomTextureSize_Rep()
+{
+	if (CustomTextureSize != 0&& CustomTexturePort!=0)
+	{
+		NotifyGetTextureData(CustomTexturePort, CustomTextureSize);
+	}
 }

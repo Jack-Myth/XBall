@@ -8,6 +8,7 @@
 #include "ActionBase.h"
 #include "XBallBase.h"
 #include "XBallPlayerState.h"
+#include "Sockets.h"
 #include "XBallPlayerControllerBase.generated.h"
 
 UENUM(BlueprintType)
@@ -42,6 +43,14 @@ protected:
 		TArray<AActionBase*> TempActionBar;
 
 	virtual void SetupInputComponent() override;
+
+	TArray<FSocket*> CustomTextureSockets;
+	UFUNCTION(Client, Reliable)
+		void NotifySendCustomTexture(int Port);
+
+	FTimerHandle CustomTextureTimerHandle;
+
+	virtual void BeginPlay() override;
 
 public:
 	UPROPERTY(BlueprintReadWrite, Replicated)
@@ -93,6 +102,9 @@ public:
 
 
 	virtual void SeamlessTravelTo(class APlayerController* NewPC) override;
+
+	UFUNCTION(Server,Reliable,WithValidation)
+		void SendCustomTexture(int DataSize);
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const override;
@@ -179,4 +191,6 @@ public:
 	UFUNCTION(BlueprintCallable,Client,Reliable)
 		void ShowResultSync(int WinTeam);
 
+	UFUNCTION(BlueprintCallable)
+		void SetCustomTexture(const TArray<uint8>& TextureData);
 };

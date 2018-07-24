@@ -16,7 +16,7 @@ UCLASS()
 class XBALL_API UMyBPFuncLib : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
-
+		static FTimerHandle InitAnimationTimeHandle;
 public:
 	UFUNCTION(BlueprintCallable, meta=(WorldContext="WorldContextObj"))
 		static void GenWorld(UObject* WorldContextObj, int Ength, int Width, int Height, int32 Seed);

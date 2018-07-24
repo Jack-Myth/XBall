@@ -15,6 +15,7 @@ class XBALL_API ALobbyGameModeBase : public AGameModeBase
 	GENERATED_BODY()
 	
 public:
+	ALobbyGameModeBase();
 	UPROPERTY(BlueprintReadWrite)
 		bool bIsTeamPlay=false;
 	UPROPERTY(BlueprintReadWrite)
@@ -25,4 +26,12 @@ public:
 		int InitMoney=800;
 	UFUNCTION(BlueprintCallable)
 		void LoadGameMapSeamless(FString MapURL);
+
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+
+	UFUNCTION(BlueprintCallable)
+		void ClearTeam();
+
+	UFUNCTION(BlueprintCallable)
+		void RePlaceTeam();
 };

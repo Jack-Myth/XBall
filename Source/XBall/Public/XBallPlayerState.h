@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
+#include "Sockets.h"
 #include "XBallPlayerState.generated.h"
 
 /**
@@ -30,8 +31,7 @@ public:
 	UPROPERTY(BlueprintReadOnly,ReplicatedUsing="HoldingCharacter_Rep")
 		class AXBallBase* HoldingCharacter=nullptr;
 
-	UPROPERTY()
-		TArray<class FSocket*> CustomTextureSocket;
+		TSharedPtr<FSocket> CustomTextureSocket=nullptr;
 	UFUNCTION(BlueprintPure)
 	inline bool IsLobbyReady()
 	{
@@ -42,11 +42,17 @@ public:
 	UPROPERTY(BlueprintReadWrite, Replicated)
 		int DeadCount;
 	UPROPERTY(BlueprintReadOnly, Replicated)
-		int Team = 3;
+		int Team = 0;
 	UPROPERTY(BlueprintReadOnly, Replicated)
-		bool bIsTextureReceiving = false;
+		bool bIsTextureSending = false;
 	UPROPERTY()
 		bool PendingSend;
+	UPROPERTY(BlueprintReadOnly,Replicated)
+		bool IsHost=false;
+	UPROPERTY(ReplicatedUsing = "CustomTexturePort_Rep")
+		int CustomTexturePort = 0;
+	UPROPERTY(ReplicatedUsing = "CustomTextureSize_Rep")
+		int CustomTextureSize = 0;
 	
 	FTimerHandle CustomTextureTimer;
 
@@ -59,24 +65,33 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable)
-		void BaseTextureData_Rep();
+		void GenBaseTexture();
 
 	DEPRECATED(4.19,"Currently NormalMap is not in the plan")
 	UFUNCTION()
 		void NormalMapData_Rep();
 
-	UFUNCTION(client, Reliable)
-		void NotifyGetTextureData(int Port);
-	UFUNCTION()
+	UFUNCTION(NetMulticast, Reliable)
+		void NotifyGetTextureData(int Port, int DataSize);
+	UFUNCTION(BlueprintCallable)
 		void SyncTextureDataToClient();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const override;
 
 	virtual void Tick(float DeltaSeconds) override;
 
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 protected:
 	virtual void CopyProperties(APlayerState* PlayerState) override;
 
 	UFUNCTION()
 		void HoldingCharacter_Rep();
+
+	UFUNCTION()
+		void CustomTexturePort_Rep();
+
+	UFUNCTION()
+		void CustomTextureSize_Rep();
 };

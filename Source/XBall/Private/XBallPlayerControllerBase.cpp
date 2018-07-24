@@ -9,6 +9,11 @@
 #include "UserWidget.h"
 #include "WidgetBlueprintLibrary.h"
 #include "XBallGameModeBase.h"
+#include "SocketSubsystem.h"
+#include "Sockets.h"
+#include "Runtime/Networking/Public/Common/TcpSocketBuilder.h"
+#include "IPAddress.h"
+#include "LobbyGameModeBase.h"
 
 void AXBallPlayerControllerBase::ReGenOldMap_Implementation(UClass* MapGenerator,int MaxEngth, int MaxWidth, int MaxHeight, int32 Seed,const TArray<FBlockInfo>& BlockInfo)
 {
@@ -34,6 +39,42 @@ void AXBallPlayerControllerBase::SetupInputComponent()
 	InputComponent->BindAction("Inventory", EInputEvent::IE_Pressed, this, &AXBallPlayerControllerBase::ToggleActionInventory);
 	InputComponent->BindAction("Rank", EInputEvent::IE_Pressed, this, &AXBallPlayerControllerBase::OpenRank);
 	InputComponent->BindAction("Rank", EInputEvent::IE_Released, this, &AXBallPlayerControllerBase::CloseRank);
+}
+
+void AXBallPlayerControllerBase::BeginPlay()
+{
+	if (HasAuthority()&&IsLocalController())
+	{
+		if (GetXBallPlayerState())
+		{
+			GetXBallPlayerState()->IsHost = true;
+		}
+	}
+}
+
+void AXBallPlayerControllerBase::NotifySendCustomTexture_Implementation(int Port)
+{
+	CustomTextureSockets.Empty();
+	CustomTextureSockets.Add(FTcpSocketBuilder("CustomTextureClientSender").AsNonBlocking().AsReusable().Build());
+	if (!CustomTextureSockets[0])
+		return;
+	if (NetConnection&&NetConnection->URL.Host != "")
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Green, NetConnection->URL.Host);
+		TSharedRef<FInternetAddr> ServerAddr= ISocketSubsystem::Get()->CreateInternetAddr();
+		bool IsServerHostValid;
+		ServerAddr->SetIp(*(NetConnection->URL.Host),IsServerHostValid);
+		if (!IsServerHostValid)
+			return;
+		ServerAddr->SetPort(Port);
+		if (CustomTextureSockets[0]->Connect(ServerAddr.Get())&&GetXBallPlayerState())
+		{
+			int ByteSent;
+			CustomTextureSockets[0]->Send(GetXBallPlayerState()->BaseTextureData.GetData(), GetXBallPlayerState()->BaseTextureData.Num(), ByteSent);
+		}
+		CustomTextureSockets[0]->Close();
+		CustomTextureSockets.Empty();
+	}
 }
 
 AXBallPlayerControllerBase::AXBallPlayerControllerBase()
@@ -62,7 +103,34 @@ void AXBallPlayerControllerBase::SetTeam_Implementation(int NewTeam)
 	AXBallPlayerState* tmpPlayerState = GetXBallPlayerState();
 	if (tmpPlayerState)
 	{
-		tmpPlayerState->Team=NewTeam;
+		if (IsInLobby())
+		{
+			if (Cast<ALobbyGameModeBase>(UGameplayStatics::GetGameMode(this))->bIsTeamPlay)
+			{
+				if (NewTeam>0&&NewTeam<5)
+					tmpPlayerState->Team = NewTeam;
+				else
+					tmpPlayerState->Team = 1;
+			}
+			else
+			{
+				tmpPlayerState->Team = 0;
+			}
+		}
+		else
+		{
+			if (Cast<AXBallGameModeBase>(UGameplayStatics::GetGameMode(this))->IsTeamGame())
+			{
+				if (NewTeam > 0 && NewTeam < 5)
+					tmpPlayerState->Team = NewTeam;
+				else
+					tmpPlayerState->Team = 1;
+			}
+			else
+			{
+				tmpPlayerState->Team = 0;
+			}
+		}
 	}
 }
 
@@ -145,6 +213,78 @@ void AXBallPlayerControllerBase::SeamlessTravelTo(class APlayerController* NewPC
 	Super::SeamlessTravelTo(NewPC);
 	AXBallPlayerControllerBase* XBallPlayerController = Cast<AXBallPlayerControllerBase>(NewPC);
 	XBallPlayerController->PlayerDefaultCharacter = PlayerDefaultCharacter;
+}
+
+void AXBallPlayerControllerBase::SendCustomTexture_Implementation(int DataSize)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Green, "Begin Send Custom Texture");
+	CustomTextureSockets.Empty();
+	CustomTextureSockets.Add(FTcpSocketBuilder("SendCustomTexture").AsNonBlocking().AsReusable().Build());
+	if (!CustomTextureSockets[0])
+		return;
+	TSharedRef<FInternetAddr> LocalAddr= ISocketSubsystem::Get()->GetLocalBindAddr(*GLog);
+	int TargetPort = ISocketSubsystem::Get()->BindNextPort(CustomTextureSockets[0], LocalAddr.Get(), 5, 1);
+	if (!TargetPort)
+		return;
+	CustomTextureSockets[0]->Listen(5);
+	GetWorld()->GetTimerManager().SetTimer(CustomTextureTimerHandle, [=]()
+		{
+			bool HasPendingConnection;
+			if (CustomTextureSockets.Num() <= 1)
+			{
+				CustomTextureSockets[0]->HasPendingConnection(HasPendingConnection);
+				if (HasPendingConnection)
+				{
+					CustomTextureSockets.Add(CustomTextureSockets[0]->Accept("CustomTextureServerReceiver"));
+				}
+				else
+				{
+					return;
+				}
+			}
+			uint32 PendingDataSize;
+			if (CustomTextureSockets[1]->HasPendingData(PendingDataSize))
+			{
+				TArray<uint8> tmpData;
+				tmpData.SetNum(PendingDataSize, false);
+				int ByteRead;
+				CustomTextureSockets[1]->Recv(tmpData.GetData(), PendingDataSize, ByteRead);
+				if (GetXBallPlayerState())
+				{
+					GetXBallPlayerState()->BaseTextureData.Append(tmpData);
+				}
+			}
+			if (CustomTextureSockets[1]->GetConnectionState()!=ESocketConnectionState::SCS_Connected||(GetXBallPlayerState()&& GetXBallPlayerState()->BaseTextureData.Num()>=DataSize))
+			{
+				//Disconnect And Sync To Client.
+				CustomTextureSockets[0]->Close();
+				CustomTextureSockets[1]->Close();
+				CustomTextureSockets.Empty();
+				GetWorld()->GetTimerManager().ClearTimer(CustomTextureTimerHandle);
+				//Gen Texture.
+				if (GetXBallPlayerState()&&!IsInLobby())
+				{
+					GetXBallPlayerState()->GenBaseTexture();
+					GetXBallPlayerState()->SyncTextureDataToClient();
+				}
+			}
+		}, 0.02f, true);
+	NotifySendCustomTexture(TargetPort);
+}
+
+bool AXBallPlayerControllerBase::SendCustomTexture_Validate(int DataSize)
+{
+	if (GetXBallPlayerState()&&DataSize<128*1024)
+	{
+		if (GetXBallPlayerState()->bIsTextureSending)
+		{
+			return false;
+		}
+		else
+			return true;
+	}
+	else
+		return false;
 }
 
 void AXBallPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
@@ -338,6 +478,26 @@ void AXBallPlayerControllerBase::CloseRank()
 	{
 		RankWidget->RemoveFromParent();
 		RankWidget = nullptr;
+	}
+}
+
+void AXBallPlayerControllerBase::SetCustomTexture(const TArray<uint8>& TextureData)
+{
+	if (HasAuthority())
+	{
+		if (GetXBallPlayerState())
+		{
+			GetXBallPlayerState()->SetCustomTexture("BaseTexture", TextureData);
+			GetXBallPlayerState()->SyncTextureDataToClient();
+		}
+	}
+	else
+	{
+		if (GetXBallPlayerState())
+		{
+			GetXBallPlayerState()->BaseTextureData = TextureData;
+			SendCustomTexture(TextureData.Num());
+		}
 	}
 }
 
