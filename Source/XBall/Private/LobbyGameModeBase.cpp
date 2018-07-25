@@ -9,11 +9,13 @@
 #include "XBallGameInstanceNative.h"
 #include "XBallPlayerControllerBase.h"
 #include "XBallPlayerState.h"
+#include "XBallGameSession.h"
 
 ALobbyGameModeBase::ALobbyGameModeBase()
 {
 	PlayerControllerClass = AXBallPlayerControllerBase::StaticClass();
 	PlayerStateClass = AXBallPlayerState::StaticClass();
+	GameSessionClass = AXBallGameSession::StaticClass();
 }
 
 void ALobbyGameModeBase::LoadGameMapSeamless(FString MapURL)

@@ -295,6 +295,7 @@ void AXBallPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 	DOREPLIFETIME(AXBallPlayerControllerBase, bIsInLobby);
 	DOREPLIFETIME(AXBallPlayerControllerBase, Coins);
 	DOREPLIFETIME(AXBallPlayerControllerBase, PlayerDefaultCharacter);
+	DOREPLIFETIME(AXBallPlayerControllerBase, bIsTeamPlay);
 }
 
 /*void AXBallPlayerControllerBase::Possess(APawn* aPawn)
@@ -498,6 +499,18 @@ void AXBallPlayerControllerBase::SetCustomTexture(const TArray<uint8>& TextureDa
 			GetXBallPlayerState()->BaseTextureData = TextureData;
 			SendCustomTexture(TextureData.Num());
 		}
+	}
+}
+
+void AXBallPlayerControllerBase::ClientWasKicked_Implementation(const FText& KickReason)
+{
+	TSubclassOf<UUserWidget> ErrorReturnClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/ErrorReturnToMainMenu.ErrorReturnToMainMenu_C'"));
+	if (ErrorReturnClass)
+	{
+		FText tmpText = KickReason;
+		UUserWidget* ErrorReturn = UUserWidget::CreateWidgetOfClass(ErrorReturnClass, nullptr, nullptr, this);
+		ErrorReturn->ProcessEvent(ErrorReturn->FindFunction("SetErrorMsg"), &tmpText);
+		ErrorReturn->AddToViewport(999);
 	}
 }
 

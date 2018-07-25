@@ -53,6 +53,8 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
+	UPROPERTY(BlueprintReadOnly, Replicated)
+		bool bIsTeamPlay = false;
 	UPROPERTY(BlueprintReadWrite, Replicated)
 		int Coins = 800;
 
@@ -193,4 +195,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		void SetCustomTexture(const TArray<uint8>& TextureData);
+
+	virtual void ClientWasKicked_Implementation(const FText& KickReason);
 };

@@ -17,6 +17,8 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 		FString ServerName;
 	UPROPERTY(BlueprintReadWrite)
+		int MaxConnection=16;
+	UPROPERTY(BlueprintReadWrite)
 		TMap<FName, FString> StoredString;
 	UPROPERTY(BlueprintReadWrite)
 		TMap<FName, float> StoredFloat;

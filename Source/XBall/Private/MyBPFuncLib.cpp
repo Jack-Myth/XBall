@@ -23,6 +23,7 @@
 #include "../DesktopPlatform/Public/DesktopPlatformModule.h"
 
 FTimerHandle UMyBPFuncLib::InitAnimationTimeHandle;
+TArray<FDelegateHandle> UMyBPFuncLib::OnlineSessionDelegateHandle;
 
 /*void UMyBPFuncLib::SetMapGenerator(UMapGenerator* newMapGenerator)
 {
@@ -232,7 +233,7 @@ void UMyBPFuncLib::GetActionInfo(TSubclassOf<AActionBase> ActionClass, FString& 
 	AcitonClassDefaultObj->GetActionInfo(Title, Intro);
 }
 
-bool UMyBPFuncLib::CreateOnlineSessionWithName(UObject* WorldContextObj, class APlayerController* HostedController, int PublicConnections, bool UsingLAN, FName ServerName, FOnCreateSessionFinished OnCreateSessionFinished)
+bool UMyBPFuncLib::CreateOnlineSessionWithName(UObject* WorldContextObj, class APlayerController* HostedController, int PublicConnections, bool UsingLAN, FString ServerName, FOnCreateSessionFinished OnCreateSessionFinished)
 {
 	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
 	if (OnlineSubsystem)
@@ -240,10 +241,10 @@ bool UMyBPFuncLib::CreateOnlineSessionWithName(UObject* WorldContextObj, class A
 		auto Sessions = OnlineSubsystem->GetSessionInterface();
 		if (Sessions.IsValid())
 		{
-			Sessions->AddOnCreateSessionCompleteDelegate_Handle(FOnCreateSessionCompleteDelegate::CreateLambda([OnCreateSessionFinished](FName SessionName, bool IsSucceed)
+			OnlineSessionDelegateHandle.Add(Sessions->AddOnCreateSessionCompleteDelegate_Handle(FOnCreateSessionCompleteDelegate::CreateLambda([OnCreateSessionFinished](FName SessionName, bool IsSucceed)
 				{
 					OnCreateSessionFinished.ExecuteIfBound(SessionName, IsSucceed);
-				}));
+				})));
 
 			FOnlineSessionSettings Settings;
 			Settings.NumPublicConnections = PublicConnections;
@@ -252,14 +253,24 @@ bool UMyBPFuncLib::CreateOnlineSessionWithName(UObject* WorldContextObj, class A
 			Settings.bIsLANMatch = UsingLAN;
 			Settings.bUsesPresence = true;
 			Settings.bAllowJoinViaPresence = true;
+			Settings.Set(TEXT("CustomServerName"), ServerName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
-			Sessions->CreateSession(HostedController->NetPlayerIndex, ServerName, Settings);
+			Sessions->CreateSession(HostedController->NetPlayerIndex, NAME_GameSession, Settings);
 
 			// OnCreateCompleted will get called, nothing more to do now
 			return true;
 		}
 	}
 		return false;
+}
+
+void UMyBPFuncLib::ClearOnlineSubsystemNotifyDelegate()
+{
+	for (int i = 0; i < OnlineSessionDelegateHandle.Num(); i++)
+	{
+		IOnlineSubsystem::Get()->GetSessionInterface()->ClearOnCreateSessionCompleteDelegate_Handle(OnlineSessionDelegateHandle[i]);
+	}
+	OnlineSessionDelegateHandle.Empty();
 }
 
 TArray<UClass*> UMyBPFuncLib::SearchBPClassByPath(FName AssetsPath, TSubclassOf<UObject> TargetClass)
@@ -292,4 +303,11 @@ TArray<uint8> UMyBPFuncLib::LoadFileAsBytes(FString FilePath)
 	TArray<uint8> FileData;
 	FFileHelper::LoadFileToArray(FileData, *FilePath);
 	return FileData;
+}
+
+FString UMyBPFuncLib::GetCustomServerName(const FBlueprintSessionResult& SessionResult)
+{
+	FString Name;
+	SessionResult.OnlineResult.Session.SessionSettings.Get<FString>(TEXT("CustomServerName"), Name);
+	return Name;
 }

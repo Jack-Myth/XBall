@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "IMapGenerator.h"
+#include "../../OnlineSubsystemUtils/Source/OnlineSubsystemUtils/Classes/FindSessionsCallbackProxy.h"
 #include "MyBPFuncLib.generated.h"
 
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnCreateSessionFinished, FName, SessionName, bool, IsSucceed);
@@ -17,6 +18,7 @@ class XBALL_API UMyBPFuncLib : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 		static FTimerHandle InitAnimationTimeHandle;
+	static TArray<FDelegateHandle> OnlineSessionDelegateHandle;
 public:
 	UFUNCTION(BlueprintCallable, meta=(WorldContext="WorldContextObj"))
 		static void GenWorld(UObject* WorldContextObj, int Ength, int Width, int Height, int32 Seed);
@@ -55,8 +57,9 @@ public:
 		static void GetActionInfo(TSubclassOf<AActionBase> ActionClass, FString& Title, FString& Intro, int& Price);
 
 	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObj"))
-		static bool CreateOnlineSessionWithName(UObject* WorldContextObj,class APlayerController* HostedController, int PublicConnections, bool UsingLAN, FName ServerName, FOnCreateSessionFinished OnCreateSessionFinished);
-
+		static bool CreateOnlineSessionWithName(UObject* WorldContextObj,class APlayerController* HostedController, int PublicConnections, bool UsingLAN, FString ServerName, FOnCreateSessionFinished OnCreateSessionFinished);
+	UFUNCTION(BlueprintCallable)
+		static void ClearOnlineSubsystemNotifyDelegate();
 	UFUNCTION(BlueprintCallable)
 		static TArray<UClass*> SearchBPClassByPath(FName AssetsPath,TSubclassOf<UObject> TargetClass);
 
@@ -65,4 +68,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		static TArray<uint8> LoadFileAsBytes(FString FilePath);
+
+	UFUNCTION(BlueprintPure)
+		static FString GetCustomServerName(const FBlueprintSessionResult& SessionResult);
 };

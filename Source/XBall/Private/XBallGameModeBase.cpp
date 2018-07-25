@@ -10,12 +10,14 @@
 #include "XBallPlayerState.h"
 #include "XBallGameInstanceNative.h"
 #include "ConstructorHelpers.h"
+#include "XBallGameSession.h"
 
 AXBallGameModeBase::AXBallGameModeBase()
 {
 	PlayerControllerClass = AXBallPlayerControllerBase::StaticClass();
 	DefaultPawnClass = AXBallBase::StaticClass();
 	PlayerStateClass = AXBallPlayerState::StaticClass();
+	GameSessionClass = AXBallGameSession::StaticClass();
 }
 
 void AXBallGameModeBase::BeginPlay()
@@ -26,6 +28,13 @@ void AXBallGameModeBase::BeginPlay()
 void AXBallGameModeBase::SetIsTeamGame(bool isTeamGame)
 {
 	bIsTeamGame = isTeamGame;
+	//Sync To Controller
+	TArray<AActor*> Controllers;
+	UGameplayStatics::GetAllActorsOfClass(this, AXBallPlayerControllerBase::StaticClass(), Controllers);
+	for (int i=0;i<Controllers.Num();i++)
+	{
+		Cast<AXBallPlayerControllerBase>(Controllers[i])->bIsTeamPlay = isTeamGame;
+	}
 }
 
 bool AXBallGameModeBase::IsTeamGame()
@@ -206,6 +215,7 @@ void AXBallGameModeBase::InitPlayerController(APlayerController* PlayerControlle
 	NewPlayer->InitGameUI();
 	NewPlayer->SetIsInLobby(false);
 	NewPlayer->Coins = InitMoney;
+	NewPlayer->bIsTeamPlay = IsTeamGame();
 }
 
 void AXBallGameModeBase::PostSeamlessTravel()
