@@ -37,6 +37,7 @@ float AWeaponBase::GetProgressValue_Implementation()
 
 void AWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AWeaponBase, CurrentAmmo);
 	DOREPLIFETIME(AWeaponBase, ReloadTimeRemain);
 }

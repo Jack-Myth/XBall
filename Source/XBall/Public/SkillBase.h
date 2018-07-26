@@ -16,7 +16,7 @@ class XBALL_API ASkillBase : public AActionBase
 
 	UPROPERTY(Replicated)
 		float CoolDown=0;
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly)
 		float MaxCoolDown = 3;
 	FTimerHandle CoolDownTimeHandle;
 public:

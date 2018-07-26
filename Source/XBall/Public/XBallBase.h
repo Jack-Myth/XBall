@@ -15,13 +15,6 @@ class XBALL_API AXBallBase : public ACharacter
 	GENERATED_BODY()
 
 	UPROPERTY(Replicated)
-		class AWeaponBase* CurrentWeapon = nullptr;
-	UPROPERTY(Replicated)
-		class ASkillBase* CurrentSkill = nullptr;
-	//class USceneComponent* SkillSocket=nullptr, *WeaponSocket = nullptr;
-	UStaticMeshComponent* CoreBallMesh=nullptr;
-	class UCameraComponent* PlayerCamera = nullptr;
-	UPROPERTY(Replicated)
 		int Health=100;
 	UObject* PlayerTarget=nullptr;
 	FVector GetCursorLocation(FVector* outSurfaceNormal=nullptr);
@@ -41,6 +34,15 @@ class XBALL_API AXBallBase : public ACharacter
 	UPROPERTY(Replicated)
 		bool bSprintable=true;
 public:
+	UPROPERTY(Replicated,BlueprintReadOnly)
+		class AWeaponBase* CurrentWeapon = nullptr;
+	UPROPERTY(Replicated,BlueprintReadOnly)
+		class ASkillBase* CurrentSkill = nullptr;
+	UPROPERTY(BlueprintReadOnly)
+	UStaticMeshComponent* CoreBallMesh = nullptr;
+	UPROPERTY(BlueprintReadOnly)
+	class UCameraComponent* PlayerCamera = nullptr;
+
 	UPROPERTY(BlueprintReadWrite)
 		UMaterialInstanceDynamic * TargetDMI;
 

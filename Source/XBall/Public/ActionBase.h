@@ -72,7 +72,7 @@ public:
 
 	UFUNCTION(BlueprintPure,BlueprintNativeEvent)
 		float GetProgressValue();
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable,Client,Unreliable)
 		void TwinkleIcon();
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintPure)

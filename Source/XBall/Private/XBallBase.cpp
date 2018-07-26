@@ -276,6 +276,7 @@ void AXBallBase::DieDefault_Implementation(AController* InstigatedBy)
 		if (XBallController)
 		{
 			XBallController->GetXBallPlayerState()->KillScore++;
+			XBallController->Coins += 300;
 		}
 		AXBallGameModeBase* XBallGameMode= Cast<AXBallGameModeBase>(UGameplayStatics::GetGameMode(this));
 		if (XBallGameMode)
@@ -353,11 +354,14 @@ void AXBallBase::AnyDamage_Internal(AActor* DamagedActor, float Damage, const cl
 {
 	UE_LOG(LogTemp, Display, TEXT("Pawn Has been Damaged"));
 	AXBallPlayerControllerBase* XBallController = Cast<AXBallPlayerControllerBase>(InstigatedBy);
-	if (XBallController&&Cast<AXBallGameModeBase>(UGameplayStatics::GetGameMode(this))->IsTeamGame())
+	if (DamageType&&DamageType->bCausedByWorld)
+	{
+		Health -= Damage;
+	}
+	else if (XBallController&&Cast<AXBallGameModeBase>(UGameplayStatics::GetGameMode(this))->IsTeamGame())
 	{
 		AXBallPlayerControllerBase* SelfXballController = GetXBallController();
-		if (!SelfXballController ||
-			!(SelfXballController == XBallController) ||
+		if (!(SelfXballController == XBallController) &&
 			SelfXballController->GetTeam() != XBallController->GetTeam())
 		{
 			Health -= Damage;
@@ -365,7 +369,11 @@ void AXBallBase::AnyDamage_Internal(AActor* DamagedActor, float Damage, const cl
 	}
 	else
 	{
-		Health -= Damage;
+		AXBallPlayerControllerBase* SelfXballController = GetXBallController();
+		if (!(SelfXballController == XBallController))
+		{
+			Health -= Damage;
+		}
 	}
 	ShowScreenEffectDamaged_Rep((int)Damage, InstigatedBy, DamageCauser, DamageType);
 	CheckShouldDie(InstigatedBy);
@@ -561,7 +569,7 @@ void AXBallBase::BeginSelectAction_Implementation(int ActionIndex, FVector Targe
 			CurrentWeapon->OnSwitched();
 		}
 		CurrentWeapon = Cast<AWeaponBase>(ActionList[ActionIndex]);
-		CurrentWeapon->AttachToActor(this, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		CurrentWeapon->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 		CurrentWeapon->SetActorRelativeLocation(FVector(0, 60, 0));
 		CurrentWeapon->SetHolderPawn(this);
 		//CurrentWeapon->AttachToComponent(WeaponSocket, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
@@ -579,8 +587,6 @@ void AXBallBase::EndSelectAction_Implementation(int ActionIndex, FVector TargetL
 {
 	if (ActionList[ActionIndex]&&ActionList[ActionIndex]->IsA<ASkillBase>()&&CurrentSkill)
 	{
-		if (CurrentSkill->IsCoolingDown())
-			return;
 		//CurrentSkill->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		//CurrentSkill->GetRootComponent()->SetVisibility(false, true);
 		CurrentSkill->EndSelected(TargetLocation);

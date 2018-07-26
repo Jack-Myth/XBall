@@ -24,8 +24,6 @@ void ASkillBase::UpdateCoolDown_Implementation(float CoolDownTime)
 	CoolDown += CoolDownTime;
 	GetWorld()->GetTimerManager().SetTimer(CoolDownTimeHandle, [this]()
 		{
-			if (IsPendingKill())
-				return;
 			CoolDown -= 0.02f;
 			if (CoolDown <= 0)
 			{

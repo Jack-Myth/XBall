@@ -54,7 +54,7 @@ float AActionBase::GetProgressValue_Implementation()
 	return 1.f;
 }
 
-void AActionBase::TwinkleIcon()
+void AActionBase::TwinkleIcon_Implementation()
 {
 	auto* XBallController = Cast<AXBallPlayerControllerBase>(UGameplayStatics::GetPlayerController(this, 0));
 	if (XBallController)
