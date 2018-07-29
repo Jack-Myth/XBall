@@ -8,7 +8,7 @@ public class XBallTarget : TargetRules
 	public XBallTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Game;
-
-		ExtraModuleNames.AddRange( new string[] { "XBall" } );
+        bForceEnableExceptions = true;
+        ExtraModuleNames.AddRange( new string[] { "XBall" } );
 	}
 }
