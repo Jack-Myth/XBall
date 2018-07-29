@@ -176,13 +176,15 @@ void AXBallGameModeBase::RiseGameOver(int WinTeam)
 		Cast<AXBallPlayerControllerBase>(XBallController)->SetIsInLobby(true);
 	}
 }
-
-void AXBallGameModeBase::InitXBallGame(bool IsTeamPlay, int TargetScore, int InitMoney)
+void AXBallGameModeBase::InitXBallGame(bool IsTeamPlay, int TargetScore, int InitMoney, int MaxE/*=100*/, int MaxW/*=100*/, int MaxH/*=50*/)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 20, FColor::Green, "Init XBall Game!");
 	SetIsTeamGame(IsTeamPlay);
 	this->TargetScore = TargetScore;
 	this->InitMoney = InitMoney;
+	this->MaxE = MaxE;
+	this->MaxW = MaxW;
+	this->MaxH = MaxH;
 	//Gen Map Seed
 	if (!MapSeed)
 	{
@@ -191,8 +193,14 @@ void AXBallGameModeBase::InitXBallGame(bool IsTeamPlay, int TargetScore, int Ini
 			MapSeed = FMath::Rand();
 		} while (!MapSeed);
 	}
+	//For Dedicated Server, the serverside didn't have Local playercontroller;
+	//So It need to build map in InitXBallGame()
+	if (IsRunningDedicatedServer())
+	{
+		UMyBPFuncLib::GenWorld(this, MaxE, MaxW, MaxH, MapSeed);
+	}
 	//Notify Existing Controller
-	for (auto it = GetWorld()->GetPlayerControllerIterator();it;++it)
+	for (auto it = GetWorld()->GetPlayerControllerIterator(); it; ++it)
 	{
 		//Check If Client has complietly loaded the map
 		//The other controller will be handle by 
@@ -210,8 +218,10 @@ void AXBallGameModeBase::InitPlayerController(APlayerController* PlayerControlle
 		return;
 	GEngine->AddOnScreenDebugMessage(-1, 20, FColor::Green, "Init PlayerController!");
 	AXBallPlayerControllerBase* NewPlayer = Cast<AXBallPlayerControllerBase>(PlayerControllerToInit);
+	if (!NewPlayer)
+		return;
 	TArray<FBlockInfo> x = UMyBPFuncLib::CollectMapModified(this);
-	NewPlayer->ReGenOldMap(ACircleOnlyMapGenerator::StaticClass(), 100, 100, 50, MapSeed, x);
+	NewPlayer->ReGenOldMap(ACircleOnlyMapGenerator::StaticClass(), MaxE, MaxW, MaxH, MapSeed, x);
 	NewPlayer->InitGameUI();
 	NewPlayer->SetIsInLobby(false);
 	NewPlayer->Coins = InitMoney;
@@ -227,11 +237,28 @@ void AXBallGameModeBase::PostSeamlessTravel()
 	{
 		InitXBallGame(GameInstance->StoredFloat.FindRef("bIsTeamPlay"),
 			GameInstance->StoredFloat.FindRef("TargetScore"),
-			GameInstance->StoredFloat.FindRef("InitMoney"));
+			GameInstance->StoredFloat.FindRef("InitMoney"),
+			GameInstance->StoredFloat.FindRef("MaxE"),
+			GameInstance->StoredFloat.FindRef("MaxW"),
+			GameInstance->StoredFloat.FindRef("MaxH"));
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed To Cast GameInstance!"));
+	}
+}
+
+void AXBallGameModeBase::Logout(AController* Exiting)
+{
+	TArray<AActor*> Controllers;
+	UGameplayStatics::GetAllActorsOfClass(this, AXBallPlayerControllerBase::StaticClass(), Controllers);
+	if (!Controllers.Num()||(Controllers.Num()==1&&Controllers[0]==Exiting))
+	{
+		//Clear All Map
+		//Release Mem resource.
+		UMyBPFuncLib::ClearMap(this);
+		//Regen map for next match.
+		UMyBPFuncLib::GenWorld(this, MaxE, MaxW, MaxH, MapSeed);
 	}
 }
 

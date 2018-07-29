@@ -37,6 +37,9 @@ public:
 	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObj"))
 		static TArray<FBlockInfo> CollectMapModified(UObject* WorldContextObj);
 
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObj"))
+		static void ClearMap(UObject* WorldContextObj);
+
 	UFUNCTION(BlueprintCallable)
 		static UTexture2D* GetTextureFromData(const TArray<uint8>& TextureData);
 	UFUNCTION(BlueprintCallable)
@@ -64,11 +67,14 @@ public:
 		static TArray<UClass*> SearchBPClassByPath(FName AssetsPath,TSubclassOf<UObject> TargetClass);
 
 	UFUNCTION(BlueprintCallable)
-		static FString GetOpenFileName(FString Title,FString DefaultPath,FString Filter);
+		static FString GetPlatformOpenFileName(FString Title,FString DefaultPath,FString Filter);
 
 	UFUNCTION(BlueprintCallable)
 		static TArray<uint8> LoadFileAsBytes(FString FilePath);
 
 	UFUNCTION(BlueprintPure)
 		static FString GetCustomServerName(const FBlueprintSessionResult& SessionResult);
+
+	UFUNCTION(BlueprintCallable)
+		static void InitDedicatedServer(class ALobbyGameModeBase* LobbyGameMode);
 };

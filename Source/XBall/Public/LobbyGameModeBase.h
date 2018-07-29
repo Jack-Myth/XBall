@@ -24,6 +24,12 @@ public:
 		int TargetScore=32;
 	UPROPERTY(BlueprintReadWrite)
 		int InitMoney=800;
+	UPROPERTY(BlueprintReadWrite)
+		int MaxE = 100;
+	UPROPERTY(BlueprintReadWrite)
+		int MaxW = 100;
+	UPROPERTY(BlueprintReadWrite)
+		int MaxH = 50;
 	UFUNCTION(BlueprintCallable)
 		void LoadGameMapSeamless(FString MapURL);
 

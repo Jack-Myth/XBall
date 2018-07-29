@@ -9,8 +9,8 @@ public class XBall : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore",
-            "SimplexNoise" ,"UMG", "OnlineSubsystemNull","OnlineSubsystemUtils",
-            "AssetRegistry","Sockets","Networking" });
+            "SimplexNoise" ,"UMG", "OnlineSubsystem","OnlineSubsystemUtils",
+            "AssetRegistry","Sockets","Networking","Json" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

@@ -68,4 +68,7 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent)
 		TArray<FBlockInfo> CollectBlockModifiedInfo();
+
+	UFUNCTION(BlueprintNativeEvent)
+		void ClearMap();
 };

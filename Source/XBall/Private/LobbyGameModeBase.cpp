@@ -28,6 +28,9 @@ void ALobbyGameModeBase::LoadGameMapSeamless(FString MapURL)
 		GameInstance->StoredFloat.FindOrAdd("MaxPlayer") = MaxPlayer;
 		GameInstance->StoredFloat.FindOrAdd("TargetScore") = TargetScore;
 		GameInstance->StoredFloat.FindOrAdd("InitMoney") = InitMoney;
+		GameInstance->StoredFloat.FindOrAdd("MaxE") = MaxE;
+		GameInstance->StoredFloat.FindOrAdd("MaxW") = MaxW;
+		GameInstance->StoredFloat.FindOrAdd("MaxH") = MaxH;
 	}
 	else
 	{

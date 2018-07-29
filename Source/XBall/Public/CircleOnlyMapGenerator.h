@@ -73,4 +73,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 		virtual TArray<FBlockInfo> CollectBlockModifiedInfo_Implementation() override;
 
+	UFUNCTION(BlueprintCallable)
+		virtual void ClearMap_Implementation() override;
+
 };

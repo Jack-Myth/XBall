@@ -18,6 +18,7 @@ class XBALL_API AXBallGameModeBase : public AGameMode
 	bool bIsTeamGame=false;
 	int TargetScore=5;
 	int InitMoney = 800;
+	int MaxE=100, MaxW=100, MaxH=50;
 
 	struct FPlayerRespawnInfo 
 	{
@@ -62,13 +63,16 @@ public:
 		void RiseGameOver(int WinTeam);
 
 	UFUNCTION()
-		void InitXBallGame(bool IsTeamPlay,int TargetScore,int InitMoney);
+		void InitXBallGame(bool IsTeamPlay,int TargetScore,int InitMoney,int MaxE=100,int MaxW=100,int MaxH=50);
 
 	UFUNCTION()
 		void InitPlayerController(APlayerController* PlayerControllerToInit);
 
 
 	virtual void PostSeamlessTravel() override;
+
+
+	virtual void Logout(AController* Exiting) override;
 
 protected:
 	virtual void HandleMatchHasStarted() override;

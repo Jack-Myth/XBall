@@ -39,6 +39,8 @@ void AXBallPlayerControllerBase::SetupInputComponent()
 	InputComponent->BindAction("Inventory", EInputEvent::IE_Pressed, this, &AXBallPlayerControllerBase::ToggleActionInventory);
 	InputComponent->BindAction("Rank", EInputEvent::IE_Pressed, this, &AXBallPlayerControllerBase::OpenRank);
 	InputComponent->BindAction("Rank", EInputEvent::IE_Released, this, &AXBallPlayerControllerBase::CloseRank);
+	InputComponent->BindAction("EscapeMenu", EInputEvent::IE_Pressed, this, &AXBallPlayerControllerBase::OpenEscMenu);
+	InputComponent->BindAction("Chat", EInputEvent::IE_Pressed, this, &AXBallPlayerControllerBase::OpenChatUI);
 }
 
 void AXBallPlayerControllerBase::BeginPlay()
@@ -48,6 +50,18 @@ void AXBallPlayerControllerBase::BeginPlay()
 		if (GetXBallPlayerState())
 		{
 			GetXBallPlayerState()->IsHost = true;
+		}
+	}
+	if (IsLocalController())
+	{
+		TSubclassOf<UUserWidget> ChatUIClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/ChatUI.ChatUI_C'"));
+		if (ChatUIClass)
+		{
+			ChatUIWidget = UUserWidget::CreateWidgetOfClass(ChatUIClass, nullptr, nullptr, this);
+			if (ChatUIWidget)
+			{
+				ChatUIWidget->AddToViewport();
+			}
 		}
 	}
 }
@@ -194,6 +208,12 @@ void AXBallPlayerControllerBase::PostSeamlessTravel()
 
 void AXBallPlayerControllerBase::PreClientTravel(const FString& PendingURL, ETravelType TravelType, bool bIsSeamlessTravel)
 {
+	ActionInventoryWidget = nullptr;
+	MainUIWidget = nullptr;
+	RankWidget = nullptr;
+	WaitRespawn = nullptr;
+	EscMenuWidget = nullptr;
+	ChatUIWidget = nullptr;
 	Super::PreClientTravel(PendingURL, TravelType, bIsSeamlessTravel);
 	if (bIsSeamlessTravel)
 	{
@@ -296,6 +316,35 @@ void AXBallPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 	DOREPLIFETIME(AXBallPlayerControllerBase, Coins);
 	DOREPLIFETIME(AXBallPlayerControllerBase, PlayerDefaultCharacter);
 	DOREPLIFETIME(AXBallPlayerControllerBase, bIsTeamPlay);
+}
+
+void AXBallPlayerControllerBase::SetOnReceiveChatMessageDelegate(FOnReceiveChatMessage TargetDelegate)
+{
+	OnReceiveChatMsgDelegate = TargetDelegate;
+}
+
+bool AXBallPlayerControllerBase::SendChatMessage_Validate(const FString& ChatMsg)
+{
+	if (ChatMsg.Len()>10240)
+	{
+		return false;
+	}
+	return true;
+}
+
+void AXBallPlayerControllerBase::SendChatMessage_Implementation(const FString& ChatMsg)
+{
+	TArray<AActor*> XBallControllers;
+	UGameplayStatics::GetAllActorsOfClass(this, AXBallPlayerControllerBase::StaticClass(), XBallControllers);
+	for (AActor*& XBallController:XBallControllers)
+	{
+		((AXBallPlayerControllerBase*)XBallController)->DispartchChatMessage(PlayerState->GetPlayerName()+":"+ChatMsg);
+	}
+}
+
+void AXBallPlayerControllerBase::DispartchChatMessage_Implementation(const FString& ChatMsg)
+{
+	OnReceiveChatMsgDelegate.ExecuteIfBound(ChatMsg);
 }
 
 /*void AXBallPlayerControllerBase::Possess(APawn* aPawn)
@@ -479,6 +528,49 @@ void AXBallPlayerControllerBase::CloseRank()
 	{
 		RankWidget->RemoveFromParent();
 		RankWidget = nullptr;
+	}
+}
+
+void AXBallPlayerControllerBase::OpenEscMenu()
+{
+	if (IsInLobby())
+		return;
+	if (EscMenuWidget)
+	{
+		EscMenuWidget->RemoveFromParent();
+		EscMenuWidget = nullptr;
+	}
+	else
+	{
+		TSubclassOf<UUserWidget> EscMenuClass= LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/ESCMenu.ESCMenu_C'"));
+		if (EscMenuClass)
+		{
+			EscMenuWidget = UUserWidget::CreateWidgetOfClass(EscMenuClass, nullptr, nullptr, this);
+			EscMenuWidget->AddToViewport(3);
+		}
+	}
+}
+
+void AXBallPlayerControllerBase::CloseEscMenu()
+{
+	if (IsInLobby())
+		return;
+	if (EscMenuWidget)
+	{
+		EscMenuWidget->RemoveFromParent();
+		EscMenuWidget = nullptr;
+	}
+}
+
+void AXBallPlayerControllerBase::OpenChatUI()
+{
+	if (!IsInLobby())
+	{
+		if (IsValid(ChatUIWidget))
+		{
+			ChatUIWidget->ProcessEvent(ChatUIWidget->FindFunction("ShowInput"), nullptr);
+			return;
+		}
 	}
 }
 

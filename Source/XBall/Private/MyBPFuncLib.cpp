@@ -20,7 +20,12 @@
 #include "AssetRegistryHelpers.h"
 #include "IAssetRegistry.h"
 #include "Engine/AssetManager.h"
-#include "../DesktopPlatform/Public/DesktopPlatformModule.h"
+#ifdef _WIN64
+#include "AllowWindowsPlatformTypes.h"
+#include <Windows.h>
+#include <commdlg.h>
+#endif
+#include "LobbyGameModeBase.h"
 
 FTimerHandle UMyBPFuncLib::InitAnimationTimeHandle;
 TArray<FDelegateHandle> UMyBPFuncLib::OnlineSessionDelegateHandle;
@@ -41,6 +46,12 @@ void UMyBPFuncLib::GenWorld(UObject* WorldContextObj, int Ength, int Width, int 
 	UMaterialParameterCollection* MPC = LoadObject<UMaterialParameterCollection>(nullptr, TEXT("MaterialParameterCollection'/Game/XBall/Materials/MatData.MatData'"));
 	UKismetMaterialLibrary::SetScalarParameterValue(WorldContextObj, MPC, "CubeSize", 50);
 	UKismetMaterialLibrary::SetVectorParameterValue(WorldContextObj, MPC, "ScaleOrigin", FLinearColor(FVector(0,0,0)));
+	for (int i = 0; i < BlockDMIs.Num(); i++)
+	{
+		BlockDMIs[i]->SetScalarParameterValue("ScaleRange", 65536);
+	}
+	//The animation may cause some unpredictable crash. so disable it.
+	/*
 	WorldContextObj->GetWorld()->GetTimerManager().SetTimer(InitAnimationTimeHandle, [=]()
 		{
 			int x = BlockDMIs[0]->K2_GetScalarParameterValue("ScaleRange") + 30;
@@ -53,6 +64,7 @@ void UMyBPFuncLib::GenWorld(UObject* WorldContextObj, int Ength, int Width, int 
 				WorldContextObj->GetWorld()->GetTimerManager().ClearTimer(InitAnimationTimeHandle);
 			}
 		}, 0.02f, true, -1);
+		*/
 }
 
 void UMyBPFuncLib::HitBlockAtLocation(UObject* WorldContextObj, FVector HitWorldLocation, float Damage)
@@ -116,6 +128,16 @@ TArray<FBlockInfo> UMyBPFuncLib::CollectMapModified(UObject* WorldContextObj)
 	if (!CoreMapGenerators.Num())
 		return TArray<FBlockInfo>();
 	return IMapGenerator::Execute_CollectBlockModifiedInfo(CoreMapGenerators[0]);
+}
+
+void UMyBPFuncLib::ClearMap(UObject* WorldContextObj)
+{
+	TArray<AActor*> CoreMapGenerators;
+	UGameplayStatics::GetAllActorsWithInterface(WorldContextObj, UMapGenerator::StaticClass(), CoreMapGenerators);
+	if (CoreMapGenerators.Num())
+	{
+		IMapGenerator::Execute_ClearMap(CoreMapGenerators[0]);
+	}
 }
 
 UTexture2D* UMyBPFuncLib::GetTextureFromData(const TArray<uint8>& TextureData)
@@ -280,21 +302,48 @@ TArray<UClass*> UMyBPFuncLib::SearchBPClassByPath(FName AssetsPath, TSubclassOf<
 	UAssetManager::Get().GetAssetRegistry().GetAssetsByPath(AssetsPath, Assets, true);
 	for (auto it= Assets.CreateIterator();it;++it)
 	{
-		FString AssetPath = it->ObjectPath.ToString();
-		if (!AssetPath.EndsWith("_C"))
-			AssetPath.Append("_C");
-		UClass* AssetClass = LoadClass<UObject>(nullptr,*AssetPath);
+		const FString* GeneratedClassMetaData = it->TagsAndValues.Find("GeneratedClass");
+		FString ClassPath= FPackageName::ExportTextPathToObjectPath(*GeneratedClassMetaData);
+		UClass* AssetClass = LoadClass<UObject>(nullptr,*ClassPath);
 		if(AssetClass&&AssetClass->IsChildOf(TargetClass))
 			TargetClasses.Add(AssetClass);
 	}
 	return TargetClasses;
 }
 
-FString UMyBPFuncLib::GetOpenFileName(FString Title, FString DefaultPath, FString Filter)
+FString UMyBPFuncLib::GetPlatformOpenFileName(FString Title, FString DefaultPath, FString Filter)
 {
-	TArray<FString> FileNames;
-	if (FDesktopPlatformModule::Get()->OpenFileDialog(nullptr, Title, DefaultPath, "", Filter, EFileDialogFlags::None, FileNames))
-		return FileNames[0];
+#ifdef _WIN64
+	OPENFILENAME ofn = {0};
+	TCHAR* FilterChars = new TCHAR[Filter.Len() + 2];
+	for (int i = 0; i < Filter.Len(); i++)
+	{
+		if (Filter[i]==TEXT('|'))
+		{
+			FilterChars[i] = 0;
+		}
+		else
+		{
+			FilterChars[i] = Filter[i];
+		}
+	}
+	FilterChars[Filter.Len() + 1] = 0;
+	FilterChars[Filter.Len()] = 0;
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.lpstrFilter = FilterChars;
+	ofn.lpstrTitle = *Title;
+	ofn.nMaxFile = MAX_PATH;
+	ofn.lpstrInitialDir = *DefaultPath;
+	TCHAR FilePath[1024] = {NULL};
+	ofn.lpstrFile = FilePath;
+	ofn.Flags = OFN_FILEMUSTEXIST | OFN_EXPLORER;
+	if (::GetOpenFileName(&ofn))
+	{
+		delete FilterChars;
+		return FilePath;
+	}
+	delete FilterChars;
+#endif
 	return "";
 }
 
@@ -310,4 +359,42 @@ FString UMyBPFuncLib::GetCustomServerName(const FBlueprintSessionResult& Session
 	FString Name;
 	SessionResult.OnlineResult.Session.SessionSettings.Get<FString>(TEXT("CustomServerName"), Name);
 	return Name;
+}
+
+void UMyBPFuncLib::InitDedicatedServer(class ALobbyGameModeBase* LobbyGameMode)
+{
+	int i = 0;
+	for (;i<__argc;i++)
+	{
+		if(FString(__argv[i]).Equals("-InitJson",ESearchCase::IgnoreCase))
+			break;
+	}
+	if (i<__argc-1)
+	{
+		FString JsonPath = __argv[i + 1];
+		FString JsonDataStr;
+		if (!FFileHelper::LoadFileToString(JsonDataStr, *JsonPath))
+		{
+			UE_LOG(LogTemp, Error, TEXT("Invalid Json File:%s"), *JsonPath);
+			exit(0);
+		}
+		TSharedRef<TJsonReader<TCHAR>> ResultJsonReader = TJsonReaderFactory<TCHAR>::Create(JsonDataStr);
+		TSharedPtr<FJsonObject> JsonParsed = MakeShareable(new FJsonObject());
+		FJsonSerializer::Deserialize(ResultJsonReader, JsonParsed);
+		LobbyGameMode->bIsTeamPlay = JsonParsed->GetBoolField("TeamPlay");
+		int TempNumber;
+		if (JsonParsed->TryGetNumberField("InitCoins", TempNumber))
+			LobbyGameMode->InitMoney = TempNumber;
+		if (JsonParsed->TryGetNumberField("MaxPlayer", TempNumber))
+			LobbyGameMode->MaxPlayer = TempNumber;
+		if (JsonParsed->TryGetNumberField("TargetScore", TempNumber))
+			LobbyGameMode->TargetScore = TempNumber;
+		if (JsonParsed->TryGetNumberField("MaxE", TempNumber))
+			LobbyGameMode->MaxE = TempNumber;
+		if (JsonParsed->TryGetNumberField("MaxW", TempNumber))
+			LobbyGameMode->MaxW = TempNumber;
+		if (JsonParsed->TryGetNumberField("MaxH", TempNumber))
+			LobbyGameMode->MaxH = TempNumber;
+	}
+	LobbyGameMode->LoadGameMapSeamless("Minimal_Default");
 }

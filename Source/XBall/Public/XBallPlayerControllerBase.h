@@ -19,6 +19,8 @@ enum class EScoreType: uint8
 	ST_ALL		UMETA(Hidden)
 };
 
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnReceiveChatMessage, const FString&, ChatMsg);
+
 /**
  * 
  */
@@ -31,6 +33,8 @@ class XBALL_API AXBallPlayerControllerBase : public APlayerController
 	UUserWidget* MainUIWidget = nullptr;
 	UUserWidget* RankWidget = nullptr;
 	UUserWidget* WaitRespawn = nullptr;
+	UUserWidget* EscMenuWidget = nullptr;
+	UUserWidget* ChatUIWidget = nullptr;
 
 	UPROPERTY(Replicated)
 		bool bIsInLobby=true;
@@ -49,6 +53,8 @@ protected:
 		void NotifySendCustomTexture(int Port);
 
 	FTimerHandle CustomTextureTimerHandle;
+
+	FOnReceiveChatMessage OnReceiveChatMsgDelegate;
 
 	virtual void BeginPlay() override;
 
@@ -123,6 +129,15 @@ public:
 		return bIsInLobby;
 	}
 
+	UFUNCTION(BlueprintCallable)
+		void SetOnReceiveChatMessageDelegate(FOnReceiveChatMessage TargetDelegate);
+
+	UFUNCTION(BlueprintCallable, Server, Reliable,WithValidation)
+		void SendChatMessage(const FString& ChatMsg);
+
+	UFUNCTION(Client,Reliable)
+		void DispartchChatMessage(const FString& ChatMsg);
+
 	//virtual void Possess(APawn* aPawn) override;
 
 	void ModifyScore(EScoreType Type);
@@ -176,6 +191,14 @@ public:
 		void OpenRank();
 	UFUNCTION()
 		void CloseRank();
+
+	UFUNCTION(BlueprintCallable)
+		void OpenEscMenu();
+	UFUNCTION(BlueprintCallable)
+		void CloseEscMenu();
+
+	UFUNCTION(BlueprintCallable)
+		void OpenChatUI();
 
 	UFUNCTION(BlueprintCallable,Client,Reliable)
 		void InitGameUI();

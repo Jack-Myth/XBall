@@ -317,6 +317,7 @@ ACircleOnlyMapGenerator::ACircleOnlyMapGenerator()
 
 ACircleOnlyMapGenerator::~ACircleOnlyMapGenerator()
 {
+	
 }
 
 void ACircleOnlyMapGenerator::GenMapBlockInstance_Implementation(UObject* WorldContextObj, int MaxEngth, int MaxWidth, int MaxHeight,int32 Seed)
@@ -425,6 +426,23 @@ TArray<FBlockInfo> ACircleOnlyMapGenerator::CollectBlockModifiedInfo_Implementat
 				}
 			}
 	return Blockinfo;
+}
+
+void ACircleOnlyMapGenerator::ClearMap_Implementation()
+{
+	for (int i = 0; i < MapBlockInstances.Num(); i++)
+	{
+		AActor* MapHolder = MapBlockInstances[i]->GetOwner();
+		if (IsValid(MapHolder))
+		{
+			MapHolder->Destroy();
+		}
+	}
+	MapBlockInstances.Empty();
+	MapBlockHealth.Empty();
+	MapVariation.Empty();
+	BlockDMIs.Empty();
+	BlockColorTemplate.Empty();
 }
 
 void ACircleOnlyMapGenerator::BreakBlockRange_Implementation(FVector Center, FVector RangeXYZ, bool ShouldIncludeEdge)
