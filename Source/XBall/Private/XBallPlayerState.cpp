@@ -174,7 +174,7 @@ void AXBallPlayerState::SyncTextureDataToClient()
 				GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Green, "Socket Closed");
 				CustomTextureSocket[0]->Close();
 				CustomTextureSocket.Empty();
-				GetWorld()->GetTimerManager().ClearTimer(CustomTextureTimer);
+				GetWorld()->GetTimerManager().ClearTim	er(CustomTextureTimer);
 			}*/
 		}, 0.02f, true);
 	CustomTexturePort = TargetPort;
@@ -214,6 +214,16 @@ void AXBallPlayerState::Tick(float DeltaSeconds)
 
 void AXBallPlayerState::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (CustomTextureSocket.IsValid())
+	{
+		CustomTextureSocket->Close();
+		GetWorld()->GetTimerManager().ClearTimer(CustomTextureTimer);
+	}
+}
+
+void AXBallPlayerState::SeamlessTravelTo(class APlayerState* NewPlayerState)
+{
+	Super::SeamlessTravelTo(NewPlayerState);
 	if (CustomTextureSocket.IsValid())
 	{
 		CustomTextureSocket->Close();

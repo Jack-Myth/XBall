@@ -19,7 +19,7 @@ class XBALL_API AXBallGameModeBase : public AGameMode
 	int TargetScore=5;
 	int InitMoney = 800;
 	int MaxE=100, MaxW=100, MaxH=50;
-
+	bool IsGameOver = false;
 	struct FPlayerRespawnInfo 
 	{
 		float TimeRemain;

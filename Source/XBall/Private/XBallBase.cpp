@@ -130,11 +130,12 @@ AXBallBase::AXBallBase()
 	CameraArm->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 	CameraArm->SetRelativeLocation(FVector(0.f));
 	CameraArm->SetWorldRotation(FRotator(-50.f, 0.f, 0));
-	CameraArm->TargetArmLength = 600;
+	CameraArm->TargetArmLength = 800;
+	CameraArm->bEnableCameraLag = true;
+	CameraArm->bDoCollisionTest = false;
 	PlayerCamera = CreateDefaultSubobject<UCameraComponent>("PlayerCamera");
 	PlayerCamera->AttachToComponent(CameraArm, FAttachmentTransformRules::KeepRelativeTransform);
 	PlayerCamera->SetRelativeLocation(FVector(0.f));
-
 	// Enable Replication
 	SetReplicates(true);
 	SetReplicateMovement(true);
@@ -149,6 +150,7 @@ AXBallBase::AXBallBase()
 
 	ActionList.SetNum(8,false);
 	AutoPossessAI = EAutoPossessAI::Disabled;
+
 }
 
 AActionBase* AXBallBase::AddActionToBar(int Index, AActionBase* Action)
@@ -609,7 +611,6 @@ bool AXBallBase::EndSelectAction_Validate(int ActionIndex, FVector TargetLocatio
 void AXBallBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
 	//CameraArm->SetWorldRotation(FRotator(-50, 0, 0));
 }
 

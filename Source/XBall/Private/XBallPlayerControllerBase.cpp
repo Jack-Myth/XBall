@@ -14,6 +14,8 @@
 #include "Runtime/Networking/Public/Common/TcpSocketBuilder.h"
 #include "IPAddress.h"
 #include "LobbyGameModeBase.h"
+#include "Kismet/KismetMaterialLibrary.h"
+#include "Materials/MaterialParameterCollection.h"
 
 void AXBallPlayerControllerBase::ReGenOldMap_Implementation(UClass* MapGenerator,int MaxEngth, int MaxWidth, int MaxHeight, int32 Seed,const TArray<FBlockInfo>& BlockInfo)
 {
@@ -24,6 +26,7 @@ void AXBallPlayerControllerBase::ReGenOldMap_Implementation(UClass* MapGenerator
 	}
 	else
 		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, "OK:Client Is Executeing the ReGenOldMap().");
+	UMyBPFuncLib::ClearMap(this);
 	UMyBPFuncLib::GenWorld(this, MaxEngth, MaxWidth, MaxHeight, Seed);
 	UMyBPFuncLib::SyncMap(this,BlockInfo);
 }
@@ -52,7 +55,7 @@ void AXBallPlayerControllerBase::BeginPlay()
 			GetXBallPlayerState()->IsHost = true;
 		}
 	}
-	if (IsLocalController())
+	if (IsLocalController()&&!IsInLobby())
 	{
 		TSubclassOf<UUserWidget> ChatUIClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/ChatUI.ChatUI_C'"));
 		if (ChatUIClass)
@@ -63,14 +66,15 @@ void AXBallPlayerControllerBase::BeginPlay()
 				ChatUIWidget->AddToViewport();
 			}
 		}
+		MatData = LoadObject<UMaterialParameterCollection>(nullptr, TEXT("MaterialParameterCollection'/Game/XBall/Materials/MatData.MatData'"));
 	}
 }
 
 void AXBallPlayerControllerBase::NotifySendCustomTexture_Implementation(int Port)
 {
 	CustomTextureSockets.Empty();
-	CustomTextureSockets.Add(FTcpSocketBuilder("CustomTextureClientSender").AsNonBlocking().AsReusable().Build());
-	if (!CustomTextureSockets[0])
+	CustomTextureSockets.Add(MakeShareable(FTcpSocketBuilder("CustomTextureClientSender").AsNonBlocking().AsReusable().Build()));
+	if (CustomTextureSockets[0].IsValid())
 		return;
 	if (NetConnection&&NetConnection->URL.Host != "")
 	{
@@ -239,11 +243,11 @@ void AXBallPlayerControllerBase::SendCustomTexture_Implementation(int DataSize)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Green, "Begin Send Custom Texture");
 	CustomTextureSockets.Empty();
-	CustomTextureSockets.Add(FTcpSocketBuilder("SendCustomTexture").AsNonBlocking().AsReusable().Build());
-	if (!CustomTextureSockets[0])
+	CustomTextureSockets.Add(MakeShareable(FTcpSocketBuilder("SendCustomTexture").AsNonBlocking().AsReusable().Build()));
+	if (CustomTextureSockets[0].IsValid())
 		return;
 	TSharedRef<FInternetAddr> LocalAddr= ISocketSubsystem::Get()->GetLocalBindAddr(*GLog);
-	int TargetPort = ISocketSubsystem::Get()->BindNextPort(CustomTextureSockets[0], LocalAddr.Get(), 5, 1);
+	int TargetPort = ISocketSubsystem::Get()->BindNextPort(CustomTextureSockets[0].Get(), LocalAddr.Get(), 5, 1);
 	if (!TargetPort)
 		return;
 	CustomTextureSockets[0]->Listen(5);
@@ -255,7 +259,7 @@ void AXBallPlayerControllerBase::SendCustomTexture_Implementation(int DataSize)
 				CustomTextureSockets[0]->HasPendingConnection(HasPendingConnection);
 				if (HasPendingConnection)
 				{
-					CustomTextureSockets.Add(CustomTextureSockets[0]->Accept("CustomTextureServerReceiver"));
+					CustomTextureSockets.Add(MakeShareable(CustomTextureSockets[0]->Accept("CustomTextureServerReceiver")));
 				}
 				else
 				{
@@ -305,6 +309,17 @@ bool AXBallPlayerControllerBase::SendCustomTexture_Validate(int DataSize)
 	}
 	else
 		return false;
+}
+
+void AXBallPlayerControllerBase::Tick(float DeltaSeconds)
+{
+	if (IsLocalController())
+	{
+		if (GetPawn())
+		{
+			UKismetMaterialLibrary::SetVectorParameterValue(this, MatData, "PlayerLocation", FLinearColor(GetPawn()->GetActorLocation()));
+		}
+	}
 }
 
 void AXBallPlayerControllerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const

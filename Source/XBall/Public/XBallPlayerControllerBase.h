@@ -35,7 +35,7 @@ class XBALL_API AXBallPlayerControllerBase : public APlayerController
 	UUserWidget* WaitRespawn = nullptr;
 	UUserWidget* EscMenuWidget = nullptr;
 	UUserWidget* ChatUIWidget = nullptr;
-
+	class UMaterialParameterCollection* MatData=nullptr;
 	UPROPERTY(Replicated)
 		bool bIsInLobby=true;
 protected:
@@ -48,7 +48,7 @@ protected:
 
 	virtual void SetupInputComponent() override;
 
-	TArray<FSocket*> CustomTextureSockets;
+	TArray<TSharedPtr<FSocket>> CustomTextureSockets;
 	UFUNCTION(Client, Reliable)
 		void NotifySendCustomTexture(int Port);
 
@@ -113,6 +113,9 @@ public:
 
 	UFUNCTION(Server,Reliable,WithValidation)
 		void SendCustomTexture(int DataSize);
+
+
+	virtual void Tick(float DeltaSeconds) override;
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const override;

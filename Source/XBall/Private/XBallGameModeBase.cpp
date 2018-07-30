@@ -11,6 +11,7 @@
 #include "XBallGameInstanceNative.h"
 #include "ConstructorHelpers.h"
 #include "XBallGameSession.h"
+#include "SimplexNoiseBPLibrary.h"
 
 AXBallGameModeBase::AXBallGameModeBase()
 {
@@ -70,6 +71,17 @@ void AXBallGameModeBase::PostLogin(APlayerController* NewPlayer)
 			MapSeed = FMath::Rand();
 		} while (!MapSeed);
 	}
+	//For the player that join game after GameOver.
+	//ShowGameResult.
+	if (IsGameOver)
+	{
+		AXBallPlayerControllerBase* XBallController = Cast<AXBallPlayerControllerBase>(NewPlayer);
+		if (XBallController)
+		{
+			XBallController->ShowResultSync(0);
+			XBallController->SetIsInLobby(true);
+		}
+	}
 	InitPlayerController(NewPlayer);
 }
 
@@ -113,11 +125,12 @@ void AXBallGameModeBase::RestartPlayerAtTransform(AController* NewPlayer, const 
 {
 	TArray<AActor*> ActorsCollection;
 	FTransform tmpTransform = SpawnTransform;
-	TArray<TEnumAsByte<EObjectTypeQuery>> tmpx;
-	while (UKismetSystemLibrary::SphereOverlapActors(this, tmpTransform.GetLocation(), 100.f, tmpx, AActor::StaticClass(), TArray<AActor*>(), ActorsCollection))
+	FVector SpawnLocation;
+	do 
 	{
-		tmpTransform.SetLocation(FVector(FMath::RandRange(-500, 500), FMath::RandRange(-500, 500), FMath::RandRange(-500, 500)));
-	}
+		SpawnLocation = FVector(FMath::RandRange(-2000, 2000), FMath::RandRange(-2000, 2000), FMath::RandRange(-2000, 2000));
+	} while (USimplexNoiseBPLibrary::SimplexNoise3D(SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z) > 0.5);
+	tmpTransform.SetLocation(SpawnLocation);
 	Super::RestartPlayerAtTransform(NewPlayer, tmpTransform);
 }
 
@@ -168,12 +181,21 @@ void AXBallGameModeBase::CheckScore()
 
 void AXBallGameModeBase::RiseGameOver(int WinTeam)
 {
+	IsGameOver = true;
 	TArray<AActor*> XBallControllers;
 	UGameplayStatics::GetAllActorsOfClass(this, AXBallPlayerControllerBase::StaticClass(), XBallControllers);
 	for (AActor*& XBallController:XBallControllers)
 	{
 		Cast<AXBallPlayerControllerBase>(XBallController)->ShowResultSync(WinTeam);
 		Cast<AXBallPlayerControllerBase>(XBallController)->SetIsInLobby(true);
+	}
+	if (IsRunningDedicatedServer())
+	{
+		FTimerHandle tmpTimerH;
+		GetWorld()->GetTimerManager().SetTimer(tmpTimerH, [=]()
+			{
+				RestartGame();
+			}, 15, false, 15);
 	}
 }
 void AXBallGameModeBase::InitXBallGame(bool IsTeamPlay, int TargetScore, int InitMoney, int MaxE/*=100*/, int MaxW/*=100*/, int MaxH/*=50*/)
