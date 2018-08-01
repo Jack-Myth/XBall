@@ -24,6 +24,20 @@ AXBallGameModeBase::AXBallGameModeBase()
 void AXBallGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
+	//Gen Map Seed
+	if (!MapSeed)
+	{
+		do
+		{
+			MapSeed = FMath::Rand();
+		} while (!MapSeed);
+	}
+	//For Dedicated Server, the serverside didn't have Local playercontroller;
+	//So It need to build map in InitXBallGame()
+	if (IsRunningDedicatedServer())
+	{
+		UMyBPFuncLib::GenWorld(this, MaxE, MaxW, MaxH, MapSeed);
+	}
 }
 
 void AXBallGameModeBase::SetIsTeamGame(bool isTeamGame)
@@ -214,12 +228,6 @@ void AXBallGameModeBase::InitXBallGame(bool IsTeamPlay, int TargetScore, int Ini
 		{
 			MapSeed = FMath::Rand();
 		} while (!MapSeed);
-	}
-	//For Dedicated Server, the serverside didn't have Local playercontroller;
-	//So It need to build map in InitXBallGame()
-	if (IsRunningDedicatedServer())
-	{
-		UMyBPFuncLib::GenWorld(this, MaxE, MaxW, MaxH, MapSeed);
 	}
 	//Notify Existing Controller
 	for (auto it = GetWorld()->GetPlayerControllerIterator(); it; ++it)

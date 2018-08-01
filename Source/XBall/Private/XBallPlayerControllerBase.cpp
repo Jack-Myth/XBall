@@ -74,7 +74,7 @@ void AXBallPlayerControllerBase::NotifySendCustomTexture_Implementation(int Port
 {
 	CustomTextureSockets.Empty();
 	CustomTextureSockets.Add(MakeShareable(FTcpSocketBuilder("CustomTextureClientSender").AsNonBlocking().AsReusable().Build()));
-	if (CustomTextureSockets[0].IsValid())
+	if (!CustomTextureSockets[0].IsValid())
 		return;
 	if (NetConnection&&NetConnection->URL.Host != "")
 	{
@@ -244,7 +244,7 @@ void AXBallPlayerControllerBase::SendCustomTexture_Implementation(int DataSize)
 	GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Green, "Begin Send Custom Texture");
 	CustomTextureSockets.Empty();
 	CustomTextureSockets.Add(MakeShareable(FTcpSocketBuilder("SendCustomTexture").AsNonBlocking().AsReusable().Build()));
-	if (CustomTextureSockets[0].IsValid())
+	if (!CustomTextureSockets[0].IsValid())
 		return;
 	TSharedRef<FInternetAddr> LocalAddr= ISocketSubsystem::Get()->GetLocalBindAddr(*GLog);
 	int TargetPort = ISocketSubsystem::Get()->BindNextPort(CustomTextureSockets[0].Get(), LocalAddr.Get(), 5, 1);
@@ -597,6 +597,10 @@ void AXBallPlayerControllerBase::SetCustomTexture(const TArray<uint8>& TextureDa
 		{
 			GetXBallPlayerState()->SetCustomTexture("BaseTexture", TextureData);
 			GetXBallPlayerState()->SyncTextureDataToClient();
+			if (!IsInLobby())
+			{
+				GetXBallPlayerState()->GenBaseTexture();
+			}
 		}
 	}
 	else

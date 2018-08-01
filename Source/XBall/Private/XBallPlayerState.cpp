@@ -65,7 +65,7 @@ void AXBallPlayerState::GenBaseTexture()
 	else
 	{
 		CustomTextures.FindOrAdd("BaseTexture") = nullptr;
-		if (HoldingCharacter)
+		if (IsValid(HoldingCharacter))
 		{
 			HoldingCharacter->TargetDMI->SetTextureParameterValue("BaseTexture", LoadObject<UTexture2D>(nullptr, TEXT("Texture2D'/Game/XBall/Materials/Textures/PureWhite.PureWhite'")));
 		}
@@ -149,6 +149,11 @@ void AXBallPlayerState::NotifyGetTextureData_Implementation(int Port,int DataSiz
 void AXBallPlayerState::SyncTextureDataToClient()
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Cyan, "Begin Sync TextureData To Client");
+	if (CustomTextureSocket.IsValid())
+	{
+		CustomTextureSocket->Close();
+		GetWorld()->GetTimerManager().ClearTimer(CustomTextureTimer);
+	}
 	CustomTextureSocket=MakeShareable(FTcpSocketBuilder("SyncTextureServerSocket").AsNonBlocking().AsReusable().Build());
 	TSharedRef<FInternetAddr> LocalAddr = ISocketSubsystem::Get()->GetLocalBindAddr(*GLog);
 	int TargetPort = ISocketSubsystem::Get()->BindNextPort(CustomTextureSocket.Get(), LocalAddr.Get(), 5, 1);

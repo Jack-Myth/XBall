@@ -12,9 +12,9 @@
 
 bool ACircleOnlyMapGenerator::LocationShouldHaveBlock(FVector BlockXYZ, FVector MaxXYZ)
 {
-	return abs(BlockXYZ.Z) > MaxXYZ.Z *0.4 ||
-		abs(BlockXYZ.Y) > MaxXYZ.Y *0.4 ||
-		abs(BlockXYZ.X) > MaxXYZ.X *0.4 || 
+	return abs(BlockXYZ.Z) >= MaxXYZ.Z/2-1 ||
+		abs(BlockXYZ.Y) >= MaxXYZ.Y/2-1 ||
+		abs(BlockXYZ.X) >= MaxXYZ.X/2-1|| 
 		USimplexNoiseBPLibrary::SimplexNoise3D(BlockXYZ.X / 20.f, BlockXYZ.Y / 20.f, BlockXYZ.Z / 10.f) > 0.5;
 }
 
@@ -336,9 +336,9 @@ void ACircleOnlyMapGenerator::GenMapBlockInstance_Implementation(UObject* WorldC
 	}
 	MaxXYZ = FVector(MaxEngth, MaxWidth, MaxHeight);
 	//MapBlockInstance->SetMaterial(0, tmpMat);
-	for (int z=-MaxHeight /2;z<MaxHeight /2;z++)
-		for (int y = -MaxWidth / 2; y<MaxWidth / 2; y++)
-			for (int x = -MaxEngth / 2; x < MaxEngth/ 2; x++)
+	for (int z=-MaxHeight /2;z<=MaxHeight /2;z++)
+		for (int y = -MaxWidth / 2; y<=MaxWidth / 2; y++)
+			for (int x = -MaxEngth / 2; x <= MaxEngth/ 2; x++)
 			{
 				if (ShouldPlaceBlock(FVector(x,y,z), FVector(MaxEngth,MaxWidth,MaxHeight)))
 				{

@@ -141,7 +141,7 @@ AXBallBase::AXBallBase()
 	SetReplicateMovement(true);
 
 	// Set Default Movement Details
-	JumpMaxHoldTime = 0.3f;
+	JumpMaxHoldTime = 0.4f;
 	JumpMaxCount = 2;
 	GetCharacterMovement()->AirControl = 0.7f;
 	
