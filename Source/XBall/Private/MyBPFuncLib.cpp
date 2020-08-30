@@ -302,9 +302,12 @@ TArray<UClass*> UMyBPFuncLib::SearchBPClassByPath(FName AssetsPath, TSubclassOf<
 	UAssetManager::Get().GetAssetRegistry().GetAssetsByPath(AssetsPath, Assets, true);
 	for (auto it= Assets.CreateIterator();it;++it)
 	{
-		const FString* GeneratedClassMetaData = it->TagsAndValues.Find("GeneratedClass");
-		FString ClassPath= FPackageName::ExportTextPathToObjectPath(*GeneratedClassMetaData);
-		UClass* AssetClass = LoadClass<UObject>(nullptr,*ClassPath);
+		int xIndex;
+		it->GetFullName().FindChar(TEXT('/'), xIndex);
+		FString RealPath = it->GetFullName().Mid(xIndex);
+		FString FileName = FPaths::GetBaseFilename(RealPath);
+		RealPath = FPaths::GetPath(RealPath) + "/" + FileName + "." + FileName + "_C";
+		UClass* AssetClass = LoadClass<UObject>(nullptr,*RealPath);
 		if(AssetClass&&AssetClass->IsChildOf(TargetClass))
 			TargetClasses.Add(AssetClass);
 	}
