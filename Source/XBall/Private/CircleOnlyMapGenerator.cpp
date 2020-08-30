@@ -172,7 +172,7 @@ bool ACircleOnlyMapGenerator::IsLocationHaveBlock_Internal(FVector BlockLocation
 	if (!BlockIndexExist(BlockLocation))
 		return LocationShouldHaveBlock(BlockLocation, MaxXYZ);
 	else
-		return BlockIndexOnLocation(BlockLocation);
+		return BlockIndexOnLocation(BlockLocation)!=nullptr;
 }
 
 TArray<FBlockInfo> ACircleOnlyMapGenerator::HitBlock_Internal(FVector mBlockLocation, float Damage)

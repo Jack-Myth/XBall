@@ -60,7 +60,7 @@ void AXBallPlayerControllerBase::BeginPlay()
 		TSubclassOf<UUserWidget> ChatUIClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/ChatUI.ChatUI_C'"));
 		if (ChatUIClass)
 		{
-			ChatUIWidget = UUserWidget::CreateWidgetOfClass(ChatUIClass, nullptr, nullptr, this);
+			ChatUIWidget = UUserWidget::CreateWidgetInstance(*this, ChatUIClass, "ChatUI");
 			if (ChatUIWidget)
 			{
 				ChatUIWidget->AddToViewport();
@@ -502,7 +502,7 @@ void AXBallPlayerControllerBase::ToggleActionInventory()
 			TSubclassOf<UUserWidget> InventoryUMGClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/Inventory.Inventory_C'"));
 			if (InventoryUMGClass)
 			{
-				UUserWidget* InventoryWidget = UUserWidget::CreateWidgetOfClass(InventoryUMGClass, nullptr, nullptr, this);
+				UUserWidget* InventoryWidget = UUserWidget::CreateWidgetInstance(*this,InventoryUMGClass,"Inventory");
 				InventoryWidget->AddToViewport(1);
 				ActionInventoryWidget = InventoryWidget;
 				bShowMouseCursor = true;
@@ -528,7 +528,7 @@ void AXBallPlayerControllerBase::OpenRank()
 	TSubclassOf<UUserWidget> RankClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/Rank.Rank_C'"));
 	if (RankClass)
 	{
-		RankWidget = UUserWidget::CreateWidgetOfClass(RankClass, nullptr, nullptr, this);
+		RankWidget = UUserWidget::CreateWidgetInstance(*this,RankClass, "Rank");
 		RankWidget->AddToViewport(0);
 	}
 	else
@@ -560,7 +560,7 @@ void AXBallPlayerControllerBase::OpenEscMenu()
 		TSubclassOf<UUserWidget> EscMenuClass= LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/ESCMenu.ESCMenu_C'"));
 		if (EscMenuClass)
 		{
-			EscMenuWidget = UUserWidget::CreateWidgetOfClass(EscMenuClass, nullptr, nullptr, this);
+			EscMenuWidget = UUserWidget::CreateWidgetInstance(*this,EscMenuClass,"EscMenu");
 			EscMenuWidget->AddToViewport(3);
 		}
 	}
@@ -619,7 +619,7 @@ void AXBallPlayerControllerBase::ClientWasKicked_Implementation(const FText& Kic
 	if (ErrorReturnClass)
 	{
 		FText tmpText = KickReason;
-		UUserWidget* ErrorReturn = UUserWidget::CreateWidgetOfClass(ErrorReturnClass, nullptr, nullptr, this);
+		UUserWidget* ErrorReturn = UUserWidget::CreateWidgetInstance(*this,ErrorReturnClass, "ErrorReturn");
 		ErrorReturn->ProcessEvent(ErrorReturn->FindFunction("SetErrorMsg"), &tmpText);
 		ErrorReturn->AddToViewport(999);
 	}
@@ -642,7 +642,7 @@ void AXBallPlayerControllerBase::ShowResultSync_Implementation(int WinTeam)
 	TSubclassOf<UUserWidget> ResultClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/GameResult.GameResult_C'"));
 	if (ResultClass)
 	{
-		UUserWidget* ResultInstance=UUserWidget::CreateWidgetOfClass(ResultClass, nullptr, nullptr, this);
+		UUserWidget* ResultInstance=UUserWidget::CreateWidgetInstance(*this,ResultClass, "Result");
 		if (!ResultInstance)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "Error,Create ResultWidget Failed.");
@@ -688,7 +688,7 @@ void AXBallPlayerControllerBase::ShowWaitingRespawn_Implementation()
 	TSubclassOf<UUserWidget> WaitRespawnClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/WaitRespawn.WaitRespawn_C'"));
 	if (WaitRespawnClass)
 	{
-		WaitRespawn = UUserWidget::CreateWidgetOfClass(WaitRespawnClass, nullptr, nullptr, this);
+		WaitRespawn = UUserWidget::CreateWidgetInstance(*this,WaitRespawnClass,"WaitRespawn" );
 		WaitRespawn->AddToViewport(-1);
 	}
 }
@@ -698,7 +698,7 @@ void AXBallPlayerControllerBase::InitGameUI_Implementation()
 	TSubclassOf<UUserWidget> MainUIClass = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/GameUI.GameUI_C'"));
 	if (MainUIClass)	
 	{
-		MainUIWidget = UUserWidget::CreateWidgetOfClass(MainUIClass, nullptr, nullptr, this);
+		MainUIWidget = UUserWidget::CreateWidgetInstance(*this,MainUIClass, "MainUI");
 		MainUIWidget->AddToViewport(1);
 	}
 	else
@@ -712,7 +712,7 @@ void AXBallPlayerControllerBase::ShowOK_Implementation(const FString& Title, con
 	TSubclassOf<UUserWidget> DialogWidget = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/Dialog.Dialog_C'"));
 	if (DialogWidget)
 	{
-		UUserWidget* DialogInstance = UUserWidget::CreateWidgetOfClass(DialogWidget, nullptr, nullptr, this);
+		UUserWidget* DialogInstance = UUserWidget::CreateWidgetInstance(*this,DialogWidget, "Dialog");
 		struct DialogInfoParamter
 		{
 			FString Title;
@@ -732,7 +732,7 @@ void AXBallPlayerControllerBase::ShowWarning_Implementation(const FString& Title
 	TSubclassOf<UUserWidget> DialogWidget = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/Dialog.Dialog_C'"));
 	if (DialogWidget)
 	{
-		UUserWidget* DialogInstance = UUserWidget::CreateWidgetOfClass(DialogWidget, nullptr, nullptr, this);
+		UUserWidget* DialogInstance = UUserWidget::CreateWidgetInstance(*this,DialogWidget, "Dialog");
 		struct DialogInfoParamter
 		{
 			FString Title;
@@ -752,7 +752,7 @@ void AXBallPlayerControllerBase::ShowMessage_Implementation(const FString& Title
 	TSubclassOf<UUserWidget> DialogWidget = LoadClass<UUserWidget>(nullptr, TEXT("WidgetBlueprint'/Game/XBall/Blueprints/UMG/Dialog.Dialog_C'"));
 	if (DialogWidget)
 	{
-		UUserWidget* DialogInstance = UUserWidget::CreateWidgetOfClass(DialogWidget, nullptr, nullptr, this);
+		UUserWidget* DialogInstance = UUserWidget::CreateWidgetInstance(*this,DialogWidget, "Dialog");
 		struct DialogInfoParamter
 		{
 			FString Title;

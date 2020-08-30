@@ -265,7 +265,7 @@ void AXBallGameModeBase::PostSeamlessTravel()
 	UXBallGameInstanceNative* GameInstance = Cast<UXBallGameInstanceNative>(UGameplayStatics::GetGameInstance(this));
 	if (GameInstance)
 	{
-		InitXBallGame(GameInstance->StoredFloat.FindRef("bIsTeamPlay"),
+		InitXBallGame((bool)GameInstance->StoredFloat.FindRef("bIsTeamPlay"),
 			GameInstance->StoredFloat.FindRef("TargetScore"),
 			GameInstance->StoredFloat.FindRef("InitMoney"),
 			GameInstance->StoredFloat.FindRef("MaxE"),

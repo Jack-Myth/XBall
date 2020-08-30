@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "{FEF646AA-4FD4-B2D2-E1A7-29A615C1010D}",
+	"EngineAssociation": "4.25",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -14,11 +14,6 @@
 		}
 	],
 	"Plugins": [
-		{
-			"Name": "UE4EditorCustomize",
-			"Enabled": true,
-			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/0d22d9af59624886a6fccd9573fefa90"
-		},
 		{
 			"Name": "OnlineSubsystemSteam",
 			"Enabled": true

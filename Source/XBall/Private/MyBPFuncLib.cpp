@@ -151,10 +151,10 @@ UTexture2D* UMyBPFuncLib::GetTextureFromData(const TArray<uint8>& TextureData)
 		if (imageWrapper.IsValid() &&
 			imageWrapper->SetCompressed(TextureData.GetData(), TextureData.Num()))
 		{
-			const TArray<uint8>* uncompressedRGBA = NULL;
+			TArray<uint8> uncompressedRGBA;
 			if (imageWrapper->GetRaw(ERGBFormat::RGBA, 8, uncompressedRGBA))
 			{
-				const TArray<FColor> uncompressedFColor = uint8ToFColor(*uncompressedRGBA);
+				const TArray<FColor> uncompressedFColor = uint8ToFColor(uncompressedRGBA);
 				OutTex = TextureFromImage(
 					imageWrapper->GetWidth(),
 					imageWrapper->GetHeight(),
