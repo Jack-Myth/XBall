@@ -299,7 +299,7 @@ TArray<UClass*> UMyBPFuncLib::SearchBPClassByPath(FName AssetsPath, TSubclassOf<
 {
 	TArray<FAssetData> Assets;
 	TArray<UClass*> TargetClasses;
-	UAssetManager::Get().GetAssetRegistry().GetAssetsByPath(AssetsPath, Assets, true);
+	FAssetRegistryModule::GetRegistry().GetAssetsByPath(AssetsPath, Assets, true);
 	for (auto it= Assets.CreateIterator();it;++it)
 	{
 		int xIndex;
